@@ -1,0 +1,316 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Base palette — overridden per faction via data-faction attribute */
+  --color-background: #0a0806;
+  --color-foreground: #f0e8df;
+  --color-surface: #1a1008;
+  --color-surface-hover: #2a1a0e;
+  --color-border: #3d2a18;
+  --color-muted: #8a7460;
+  --color-accent-primary: #f97316;
+  --color-accent-secondary: #ea580c;
+  --color-accent-tertiary: #dc2626;
+  --color-accent-glow: #fbbf24;
+  /* Legacy aliases kept for any hardcoded references */
+  --color-accent-orange: var(--color-accent-primary);
+  --color-accent-amber: var(--color-accent-secondary);
+  --color-accent-red: var(--color-accent-tertiary);
+  --color-accent-flame: var(--color-accent-secondary);
+  --color-accent-ember: var(--color-accent-secondary);
+  --color-accent-gold: var(--color-accent-glow);
+  --color-accent-heat: var(--color-accent-glow);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ─── Fire / The Marshalls (default) ─────────────────────────────────────── */
+:root,
+[data-faction="fire"] {
+  --color-background: #0a0806;
+  --color-foreground: #f0e8df;
+  --color-surface: #1a1008;
+  --color-surface-hover: #2a1a0e;
+  --color-border: #3d2a18;
+  --color-muted: #8a7460;
+  --color-accent-primary: #f97316;
+  --color-accent-secondary: #ea580c;
+  --color-accent-tertiary: #dc2626;
+  --color-accent-glow: #fbbf24;
+}
+
+/* ─── Earth / The Ironlord ───────────────────────────────────────────────── */
+[data-faction="earth"] {
+  --color-background: #0a0906;
+  --color-foreground: #f0ecdf;
+  --color-surface: #1a1508;
+  --color-surface-hover: #2a220e;
+  --color-border: #3d3418;
+  --color-muted: #8a7d60;
+  --color-accent-primary: #c4a35a;
+  --color-accent-secondary: #a08040;
+  --color-accent-tertiary: #8b6914;
+  --color-accent-glow: #d4af37;
+}
+
+/* ─── Water / Bluecrest ──────────────────────────────────────────────────── */
+[data-faction="water"] {
+  --color-background: #060a10;
+  --color-foreground: #dfe8f0;
+  --color-surface: #081420;
+  --color-surface-hover: #0e1e30;
+  --color-border: #182e48;
+  --color-muted: #607a8a;
+  --color-accent-primary: #3b82f6;
+  --color-accent-secondary: #2563eb;
+  --color-accent-tertiary: #1d4ed8;
+  --color-accent-glow: #60a5fa;
+}
+
+/* ─── Wood / Stewards ────────────────────────────────────────────────────── */
+[data-faction="wood"] {
+  --color-background: #060a06;
+  --color-foreground: #e0f0df;
+  --color-surface: #081a08;
+  --color-surface-hover: #0e2a0e;
+  --color-border: #183d18;
+  --color-muted: #608a60;
+  --color-accent-primary: #22c55e;
+  --color-accent-secondary: #16a34a;
+  --color-accent-tertiary: #15803d;
+  --color-accent-glow: #4ade80;
+}
+
+/* ─── Metal / Artificers ─────────────────────────────────────────────────── */
+[data-faction="metal"] {
+  --color-background: #08090a;
+  --color-foreground: #e0e4ea;
+  --color-surface: #10141a;
+  --color-surface-hover: #1a1e28;
+  --color-border: #2a3040;
+  --color-muted: #6a7488;
+  --color-accent-primary: #94a3b8;
+  --color-accent-secondary: #64748b;
+  --color-accent-tertiary: #475569;
+  --color-accent-glow: #cbd5e1;
+}
+
+/* ─── Base Styles ────────────────────────────────────────────────────────── */
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Subtle background mesh */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 80%, color-mix(in srgb, var(--color-accent-primary) 6%, transparent) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 80% 20%, color-mix(in srgb, var(--color-accent-tertiary) 4%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Glass card effect */
+.glass-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-surface) 85%, transparent) 0%,
+    color-mix(in srgb, var(--color-surface-hover) 60%, transparent) 100%
+  );
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--color-accent-primary) 12%, transparent);
+}
+
+.glass-card:hover {
+  border-color: color-mix(in srgb, var(--color-accent-primary) 30%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-surface) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-surface-hover) 75%, transparent) 100%
+  );
+  box-shadow:
+    0 4px 24px color-mix(in srgb, var(--color-accent-primary) 8%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-accent-primary) 20%, transparent), 0 0 60px color-mix(in srgb, var(--color-accent-primary) 6%, transparent);
+}
+
+/* Avatar pulse animation */
+@keyframes avatar-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent-primary) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--color-accent-primary) 0%, transparent);
+  }
+}
+
+.avatar-ring {
+  animation: avatar-pulse 3s ease-in-out infinite;
+}
+
+/* Progress bar animation */
+@keyframes progress-fill {
+  from {
+    width: 0%;
+  }
+}
+
+.progress-animated {
+  animation: progress-fill 1s ease-out forwards;
+}
+
+/* Fade in up animation */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+/* Stagger children animations */
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* Legendary shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.legendary-shimmer {
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--color-accent-primary) 0%, transparent) 0%,
+    color-mix(in srgb, var(--color-accent-primary) 8%, transparent) 40%,
+    color-mix(in srgb, var(--color-accent-glow) 15%, transparent) 50%,
+    color-mix(in srgb, var(--color-accent-primary) 8%, transparent) 60%,
+    color-mix(in srgb, var(--color-accent-primary) 0%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Smooth section transitions */
+section {
+  opacity: 0;
+  animation: fade-in-up 0.7s ease-out forwards;
+}
+
+section:nth-of-type(1) { animation-delay: 0s; }
+section:nth-of-type(2) { animation-delay: 0.2s; }
+section:nth-of-type(3) { animation-delay: 0.4s; }
+
+/* Tooltip system */
+.tooltip-trigger {
+  position: relative;
+}
+
+.tooltip-trigger:hover .tooltip-text {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Health bar fill animation */
+.health-bar-fill {
+  animation: health-fill 1s ease-out forwards;
+}
+
+@keyframes health-fill {
+  from {
+    width: 0%;
+  }
+}
+
+/* Pulse for live indicators */
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-live-pulse {
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+/* Focus visible styles */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Selection color */
+::selection {
+  background: color-mix(in srgb, var(--color-accent-primary) 35%, transparent);
+  color: #fff;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* Faction dropdown animation */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-enter {
+  animation: dropdown-in 0.15s ease-out forwards;
+}

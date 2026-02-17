@@ -238,4 +238,54 @@ The Artificers are the craft and trade faction—lower territory and the lowest 
 
 ---
 
+## Master_Database
+
+Canonical record of all metrics for each faction. Used by the app (standings, charts, text/form updates) and by the simulation engine. Single source of truth for numeric faction state.
+
+### Metric definitions
+
+- **Population** — Scaled 0–100 (Earth 5,000 = 100; others 1,250 = 25).
+- **Territory** — Land/zone control and presence (0–100).
+- **Power** — Military/raw force and capability (0–100).
+- **Influence** — Voting power, sway, and political reach (0–100).
+- **Cohesion** — Internal unity and discipline (0–100).
+- **Standing** — Weighted composite: population×0.2, territory×0.75, power×0.75, influence×1.5, cohesion×1; normalized to 0–100.
+- **Income, Avg Beauty, Avg Height** — Extended display metrics (0–100 and physical); inferred from faction role, not editable in Codex.
+
+### Faction metrics (core stats)
+
+| Faction | ID | Population | Territory | Power | Influence | Cohesion | Standing | Rank | Color |
+|---------|-----|------------|-----------|-------|-----------|----------|----------|------|-------|
+| Fire / Marshalls | fire | 25 | 45 | 100 | 58 | 95 | 71.37 | 2 | #f97316 |
+| Earth / Ironlord | earth | 100 | 90 | 65 | 95 | 68 | 82.56 | 1 | #c4a35a |
+| Water / Bluecrest | water | 25 | 70 | 78 | 62 | 62 | 64.52 | 4 | #3b82f6 |
+| Wood / Stewards | wood | 25 | 88 | 50 | 52 | 88 | 65.36 | 3 | #22c55e |
+| Metal / Artificers | metal | 25 | 35 | 42 | 82 | 42 | 54.23 | 5 | #94a3b8 |
+
+### Extended metrics (display-only)
+
+| Faction | Income (0–100) | Avg Beauty (0–100) | Avg Height |
+|---------|----------------|--------------------|------------|
+| Fire / Marshalls | 58 | 68 | 5′10″ |
+| Earth / Ironlord | 72 | 70 | 5′11″ |
+| Water / Bluecrest | 70 | 75 | 5′8″ |
+| Wood / Stewards | 55 | 66 | 5′9″ |
+| Metal / Artificers | 82 | 64 | 5′7″ |
+
+### One-line summaries (Codex)
+
+- **Fire / Marshalls** — The Marshalls are the most militarily powerful and internally united faction. They hold less land than Earth or Wood but project force and discipline; their cohesion makes them reliable in conflict and negotiation.
+- **Earth / Ironlord** — The Ironlords control the most physical territory and wield the most influence (voting power and sway). They are the land-holding, establishment faction—strong and well-connected, with solid but not maximal cohesion.
+- **Water / Bluecrest** — Bluecrest sits in the middle of the pack on most Codex stats. They hold substantial territory (especially coastal and riverine) and have moderate influence and cohesion—adaptable and fluid rather than dominant in any single dimension.
+- **Wood / Stewards** — The Stewards are the caretakers of land and growth—high territory and high cohesion, with lower raw power and influence. They are the most communal and territorially rooted of the five.
+- **Metal / Artificers** — The Artificers are the craft and trade faction—lower territory and the lowest cohesion, but strong influence through commerce and expertise. They punch above their weight in councils and deals despite smaller land and less internal unity.
+
+### App alignment
+
+- **Types:** `FactionStats` (population, territory, power, influence, cohesion), `FactionExtended` (income, avgBeauty, avgHeight), `Faction` (id, name, shortName, color, stats, rank, summary, extended).
+- **Standing weights:** population 0.2, territory 0.75, power 0.75, influence 1.5, cohesion 1.
+- **Source:** Values above match the app Codex client mock data (`app/src/codex/client.ts`, `types.ts`). Update this table when connecting to a live API or Notion database.
+
+---
+
 *Source: The Codex (Notion). Single source of truth for the Vantheon universe. Faction stats and order (Fire, Earth, Water, Wood, Metal by power) consistent with app Codex client.*
