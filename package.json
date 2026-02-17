@@ -1,4 +1,14 @@
 {
+  "name": "vv-community-hub",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix community-hub",
+    "build": "npm run build --prefix community-hub",
+    "start": "npm run start --prefix community-hub",
+    "install:hub": "npm install --prefix community-hub",
+    "postinstall": "npm install --prefix community-hub"
+  },
   "dependencies": {
     "pg": "^8.18.0"
   }
