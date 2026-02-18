@@ -263,7 +263,8 @@ export function FactionProvider({ children }: { children: ReactNode }) {
 
         if (
           merged.facilitySections.length === 0 ||
-          merged.champions.length === 0
+          merged.champions.length === 0 ||
+          merged.chatUsers.length === 0
         ) {
           const { getFaction } = await import("@/data/factionData");
           const fallback = getFaction(id);

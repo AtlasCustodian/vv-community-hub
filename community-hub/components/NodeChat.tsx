@@ -206,13 +206,6 @@ const factionThemeColors: Record<FactionId, string> = {
 
 const MAX_CHANNEL_MESSAGES = 100;
 
-const nodeChatLabels: Record<FactionId, string> = {
-  fire: "Generator Chat",
-  earth: "District Chat",
-  water: "Post Chat",
-  wood: "Terrace Chat",
-  metal: "Relay Chat",
-};
 
 const nodeFilterEmojis: Record<FactionId, string> = {
   fire: "⚙️",
@@ -511,13 +504,12 @@ export default function NodeChat({
     setInputValue("");
   };
 
-  const nodeChatLabel = nodeChatLabels[factionId];
   const nodeEmoji = nodeFilterEmojis[factionId];
 
   const filters: { key: MessageFilter; label: string; icon: string }[] = [
-    { key: "world", label: "All World", icon: "🌍" },
-    { key: "faction", label: `${factionName}`, icon: factionEmoji },
-    ...(node ? [{ key: "node" as MessageFilter, label: nodeChatLabel, icon: nodeEmoji }] : []),
+    { key: "world", label: "Global", icon: "🌍" },
+    { key: "faction", label: "Faction", icon: factionEmoji },
+    ...(node ? [{ key: "node" as MessageFilter, label: "Local", icon: nodeEmoji }] : []),
     { key: "friends", label: "Friends", icon: "👥" },
   ];
 
