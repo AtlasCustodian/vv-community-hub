@@ -431,6 +431,18 @@ async function seed() {
   try {
     await client.query("BEGIN");
 
+    // ── 0. Ensure chronicle_posts table exists ────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS chronicle_posts (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        subtitle TEXT,
+        author TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    console.log("  ✓ chronicle_posts table ensured");
+
     // ── 1. Update faction standings ──────────────────────────────────────────
     console.log("\n[1/7] Updating faction standings...");
     for (const [factionId, standing] of Object.entries(factionStandings)) {
