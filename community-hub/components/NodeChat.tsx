@@ -27,6 +27,8 @@ interface NodeChatProps {
   tickMessages?: ChatMessage[];
   chatUsers: ChatUser[];
   friendUserIds: string[];
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export interface AllFactionChatUsers {
@@ -469,6 +471,8 @@ export default function NodeChat({
   tickMessages = [],
   chatUsers,
   friendUserIds,
+  isExpanded = false,
+  onToggleExpand,
 }: NodeChatProps) {
   const isWorldMode = !node;
   const [filter, setFilter] = useState<MessageFilter>(isWorldMode ? "world" : "node");
@@ -518,7 +522,7 @@ export default function NodeChat({
   ];
 
   return (
-    <div className="animate-fade-in-up h-full flex flex-col max-h-[600px]">
+    <div className={`animate-fade-in-up h-full flex flex-col ${isExpanded ? "max-h-[800px]" : "max-h-[600px]"}`}>
       {/* Chat Header */}
       <div className="glass-card rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -546,27 +550,55 @@ export default function NodeChat({
             </div>
           </div>
 
-          {/* Return Button (only when viewing a node) */}
-          {node && onReturn && (
-            <button
-              onClick={onReturn}
-              className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-all duration-200 hover:border-accent-primary hover:text-foreground hover:bg-surface-hover"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          <div className="flex items-center gap-2">
+            {/* Expand / Minimize Button */}
+            {onToggleExpand && (
+              <button
+                onClick={onToggleExpand}
+                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-all duration-200 hover:border-accent-primary hover:text-foreground hover:bg-surface-hover"
+                title={isExpanded ? "Minimize chat" : "Expand chat"}
               >
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-              </svg>
-              Return
-            </button>
-          )}
+                {isExpanded ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="4 14 10 14 10 20" />
+                    <polyline points="20 10 14 10 14 4" />
+                    <line x1="14" y1="10" x2="21" y2="3" />
+                    <line x1="3" y1="21" x2="10" y2="14" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9" />
+                    <polyline points="9 21 3 21 3 15" />
+                    <line x1="21" y1="3" x2="14" y2="10" />
+                    <line x1="3" y1="21" x2="10" y2="14" />
+                  </svg>
+                )}
+                {isExpanded ? "Minimize" : "Expand"}
+              </button>
+            )}
+
+            {/* Return Button (only when viewing a node) */}
+            {node && onReturn && (
+              <button
+                onClick={onReturn}
+                className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-all duration-200 hover:border-accent-primary hover:text-foreground hover:bg-surface-hover"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Return
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter Tabs */}

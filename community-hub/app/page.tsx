@@ -28,16 +28,16 @@ export default function Home() {
         <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       </div>
 
-      {/* Community Tools */}
-      <CommunityTools />
+      {/* Active Champion Roster */}
+      <ChampionRoster />
 
       {/* Divider */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       </div>
 
-      {/* Active Champion Roster */}
-      <ChampionRoster />
+      {/* Community Tools */}
+      <CommunityTools />
 
       {/* Divider */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">

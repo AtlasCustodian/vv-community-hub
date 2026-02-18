@@ -90,6 +90,7 @@ export default function FactionGridMap() {
   const { factionId, faction, allFactions } = useFaction();
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
   const { tick } = useTick();
   const prevTickRef = useRef(tick);
@@ -168,10 +169,10 @@ export default function FactionGridMap() {
       </div>
 
       {/* Side-by-side: Chat (left) + Map (right) */}
-      <div ref={chatRef} className="flex flex-col lg:flex-row gap-6" style={{ scrollMarginTop: "88px" }}>
+      <div ref={chatRef} className={`flex flex-col ${isChatExpanded ? "" : "lg:flex-row"} gap-6`} style={{ scrollMarginTop: "88px" }}>
 
       {/* Chat Panel */}
-      <div className="w-full lg:w-[420px] lg:flex-shrink-0 max-h-[600px]">
+      <div className={`w-full ${isChatExpanded ? "max-h-[800px]" : "lg:w-[420px] lg:flex-shrink-0 max-h-[600px]"}`}>
         <NodeChat
           key={`${factionId}-${selectedNode ?? "world"}`}
           node={selectedNodeData ?? undefined}
@@ -183,6 +184,8 @@ export default function FactionGridMap() {
           tickMessages={tickMessagesByFaction[factionId]}
           chatUsers={faction.chatUsers}
           friendUserIds={faction.friendUserIds}
+          isExpanded={isChatExpanded}
+          onToggleExpand={() => setIsChatExpanded((prev) => !prev)}
         />
       </div>
 
