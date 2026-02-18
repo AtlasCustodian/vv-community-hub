@@ -576,9 +576,9 @@ export default function NodeChat({
   ];
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up h-full flex flex-col max-h-[600px]">
       {/* Chat Header */}
-      <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="glass-card rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div
@@ -670,8 +670,7 @@ export default function NodeChat({
         {/* Message Area */}
         <div
           ref={chatContainerRef}
-          className="flex flex-col gap-1 overflow-y-auto px-4 py-3"
-          style={{ maxHeight: "420px", minHeight: "280px" }}
+          className="flex flex-col gap-1 overflow-y-auto px-4 py-3 flex-1 min-h-0"
         >
           {/* Channel intro */}
           <div className="mb-3 text-center">

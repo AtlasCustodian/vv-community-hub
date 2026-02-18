@@ -144,7 +144,7 @@ export default function FactionGridMap() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       {/* Legend */}
       <div className="mb-6 flex flex-wrap items-center justify-center gap-6">
         <div className="flex items-center gap-2">
@@ -161,8 +161,11 @@ export default function FactionGridMap() {
         </div>
       </div>
 
-      {/* Chat Panel (always visible, above grid) */}
-      <div ref={chatRef} className="mb-6" style={{ scrollMarginTop: "88px" }}>
+      {/* Side-by-side: Chat (left) + Map (right) */}
+      <div ref={chatRef} className="flex flex-col lg:flex-row gap-6" style={{ scrollMarginTop: "88px" }}>
+
+      {/* Chat Panel */}
+      <div className="w-full lg:w-[420px] lg:flex-shrink-0 max-h-[600px]">
         <NodeChat
           key={`${factionId}-${selectedNode ?? "world"}`}
           node={selectedNodeData ?? undefined}
@@ -176,7 +179,7 @@ export default function FactionGridMap() {
       </div>
 
       {/* Map container */}
-      <div className="relative glass-card rounded-2xl p-6 sm:p-8 overflow-hidden">
+      <div className="relative glass-card rounded-2xl p-6 sm:p-8 overflow-hidden flex-1 min-w-0">
         <div
           className="pointer-events-none absolute inset-0 opacity-20"
           style={{
@@ -392,6 +395,8 @@ export default function FactionGridMap() {
           )}
         </div>
       </div>
+
+      </div>{/* end side-by-side */}
 
       {/* Roster table */}
       <div className="mt-8">
