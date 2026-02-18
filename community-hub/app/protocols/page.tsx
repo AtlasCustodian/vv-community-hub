@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useFaction } from "@/context/FactionContext";
 import { FactionProtocol } from "@/data/factionData";
 
@@ -113,6 +114,17 @@ export default function ProtocolsPage() {
 
   return (
     <div className="pb-20">
+      <div className="flex justify-start px-4 pt-4 sm:px-6 lg:px-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface/50 px-4 py-2 text-sm font-medium text-muted transition-all hover:border-accent-primary/30 hover:text-foreground hover:bg-surface-hover"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Return to Dashboard
+        </Link>
+      </div>
       {/* Quick navigation */}
       <section className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
