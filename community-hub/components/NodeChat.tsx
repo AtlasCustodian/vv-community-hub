@@ -99,58 +99,49 @@ function generateTimestamp(minutesAgo: number): string {
   return `${h}:${m}`;
 }
 
-const worldMessages: Record<FactionId, string[]> = {
-  fire: [
-    "Anyone else feel that tremor from the Deeps? Turbine 3 is rattling again.",
-    "Power output is stable — good work tonight, everyone.",
-    "The Ironlord's people are complaining about the heat vents near the Roots Market again.",
-    "Bluecrest just called in — the Breakers need more power for the rotation tonight.",
-    "Has anyone seen the latest Veil readings from Metal? The EM spike is unusual.",
-    "Reminder: double shifts are optional this cycle, not mandatory. Talk to your foreman.",
-    "Wood faction reported the irrigation pumps are running smooth. Nice to hear.",
-    "Council session tomorrow — something about resource allocation. Stay tuned.",
-  ],
-  earth: [
-    "Market traffic is heavier than usual today. Must be festival prep.",
-    "The bakers on Third Street need more grain from Wood — supply running low.",
-    "Anyone heading to the Cultural Center tonight? Live music from Terrace Row.",
-    "Fire faction just increased power to the residential district. Finally warm enough.",
-    "Council postponed the trade hearing by two days. Merchants aren't happy.",
-    "Bluecrest is recruiting volunteers for wall-side cleanup after the last storm.",
-    "The new artisan guild apprentices are showing real promise this cycle.",
-    "Metal sent word: Terminal relay in the Roots district is back online.",
-  ],
-  water: [
-    "Veil is calm tonight. Enjoy it while it lasts.",
-    "Breaker Alpha rotation was clean — 3.9 minutes. Getting faster.",
-    "Storm tracker shows a low-pressure system building to the north-northeast.",
-    "Fire says they can boost power to Breaker hydraulics if we need it.",
-    "Flood barriers on the southern access are deployed as a precaution.",
-    "Metal's instruments are picking up something weird near the Obelisk. Typical.",
-    "Wood's flood channels held during the last surge. Good coordination.",
-    "Reminder: dive bay equipment check is mandatory before every shift.",
-  ],
-  wood: [
-    "Harvest projections look strong this cycle. Quota is in sight.",
-    "Eastern slope terraces are getting more rain than forecast. Watch the channels.",
-    "Fire's irrigation pumps are running at 98% — no complaints here.",
-    "The Flatland ranchers reported a fence breach near the western pastures.",
-    "Grain storage is at 62% capacity. Comfortable for now.",
-    "Bluecrest asked if we can divert extra food reserves for the wall crews.",
-    "Metal is sending a tech to fix the monitoring station on the lower terraces.",
-    "Council wants an updated harvest report by end of the cycle.",
-  ],
-  metal: [
-    "Signal integrity across the network is holding at 99.2%. Good numbers.",
-    "Relay node on the Flats is degrading again. Sending a crew tomorrow.",
-    "The Obelisk readings are... unusual today. More analysis needed.",
-    "Fire's power fluctuations are causing minor interference on the Deeps relay.",
-    "Water faction needs the storm data feed prioritized — switching routing now.",
-    "Lab A has an opening for the EM shielding experiment. Sign up if interested.",
-    "New research paper from Dr. Caro on Veil pattern cycles. Recommended reading.",
-    "Terminal network maintenance window: 0200-0400 tonight. Brief outages expected.",
-  ],
-};
+// World messages are shared across ALL factions — this is the global chat everyone sees.
+const worldMessages: string[] = [
+  "Anyone else feel that tremor from the Deeps? Turbine 3 is rattling again.",
+  "Market traffic is heavier than usual today. Must be festival prep.",
+  "Veil is calm tonight. Enjoy it while it lasts.",
+  "Harvest projections look strong this cycle. Quota is in sight.",
+  "Signal integrity across the network is holding at 99.2%. Good numbers.",
+  "Power output is stable — good work tonight, everyone.",
+  "The bakers on Third Street need more grain from Wood — supply running low.",
+  "Breaker Alpha rotation was clean — 3.9 minutes. Getting faster.",
+  "Fire's irrigation pumps are running at 98% — no complaints here.",
+  "Relay node on the Flats is degrading again. Sending a crew tomorrow.",
+  "The Ironlord's people are complaining about the heat vents near the Roots Market again.",
+  "Anyone heading to the Cultural Center tonight? Live music from Terrace Row.",
+  "Storm tracker shows a low-pressure system building to the north-northeast.",
+  "The Flatland ranchers reported a fence breach near the western pastures.",
+  "The Obelisk readings are... unusual today. More analysis needed.",
+  "Bluecrest just called in — the Breakers need more power for the rotation tonight.",
+  "Fire faction just increased power to the residential district. Finally warm enough.",
+  "Fire says they can boost power to Breaker hydraulics if we need it.",
+  "Grain storage is at 62% capacity. Comfortable for now.",
+  "Fire's power fluctuations are causing minor interference on the Deeps relay.",
+  "Has anyone seen the latest Veil readings from Metal? The EM spike is unusual.",
+  "Council postponed the trade hearing by two days. Merchants aren't happy.",
+  "Flood barriers on the southern access are deployed as a precaution.",
+  "Bluecrest asked if we can divert extra food reserves for the wall crews.",
+  "Water faction needs the storm data feed prioritized — switching routing now.",
+  "Reminder: double shifts are optional this cycle, not mandatory. Talk to your foreman.",
+  "Bluecrest is recruiting volunteers for wall-side cleanup after the last storm.",
+  "Metal's instruments are picking up something weird near the Obelisk. Typical.",
+  "Metal is sending a tech to fix the monitoring station on the lower terraces.",
+  "Lab A has an opening for the EM shielding experiment. Sign up if interested.",
+  "Wood faction reported the irrigation pumps are running smooth. Nice to hear.",
+  "The new artisan guild apprentices are showing real promise this cycle.",
+  "Wood's flood channels held during the last surge. Good coordination.",
+  "Council wants an updated harvest report by end of the cycle.",
+  "New research paper from Dr. Caro on Veil pattern cycles. Recommended reading.",
+  "Council session tomorrow — something about resource allocation. Stay tuned.",
+  "Metal sent word: Terminal relay in the Roots district is back online.",
+  "Reminder: dive bay equipment check is mandatory before every shift.",
+  "Eastern slope terraces are getting more rain than forecast. Watch the channels.",
+  "Terminal network maintenance window: 0200-0400 tonight. Brief outages expected.",
+];
 
 const factionMessages: Record<FactionId, string[]> = {
   fire: [
@@ -260,6 +251,16 @@ const friendMessages: Record<FactionId, string[]> = {
 
 // ─── Node Chat Config ────────────────────────────────────────────────────────
 
+const factionThemeColors: Record<FactionId, string> = {
+  fire: "#f97316",
+  earth: "#c4a35a",
+  water: "#3b82f6",
+  wood: "#22c55e",
+  metal: "#94a3b8",
+};
+
+const MAX_CHANNEL_MESSAGES = 100;
+
 const nodeChatLabels: Record<FactionId, string> = {
   fire: "Generator Chat",
   earth: "District Chat",
@@ -350,9 +351,9 @@ function generateMessages(
   const friends = friendUsers[factionId];
   let minutesAgo = 2;
 
-  // World messages — from various factions
-  const wMsgs = worldMessages[factionId];
-  for (let i = 0; i < wMsgs.length; i++) {
+  // World messages — shared across all factions, users cycle through all factions.
+  // Timestamps use deterministic spacing so all factions see the same chat history.
+  for (let i = 0; i < worldMessages.length; i++) {
     const srcFaction = allFactionIds[i % allFactionIds.length];
     const users = factionUsers[srcFaction];
     const user = users[i % users.length];
@@ -361,11 +362,11 @@ function generateMessages(
       username: user.name,
       factionId: srcFaction,
       factionEmoji: user.emoji,
-      content: wMsgs[i],
+      content: worldMessages[i],
       timestamp: generateTimestamp(minutesAgo),
       type: "world",
     });
-    minutesAgo += Math.floor(Math.random() * 5) + 2;
+    minutesAgo += 3 + (i % 4);
   }
 
   // Faction messages
@@ -443,12 +444,11 @@ export function generateTickMessages(
   const newMessages: ChatMessage[] = [];
   const allFactionIds: FactionId[] = ["fire", "earth", "water", "wood", "metal"];
 
-  // World message
-  const wMsgs = worldMessages[factionId];
-  const wMsg = wMsgs[Math.floor(Math.random() * wMsgs.length)];
-  const srcFaction = allFactionIds[Math.floor(Math.random() * allFactionIds.length)];
+  // World message — deterministic based on tick so all factions see the same one
+  const wMsg = worldMessages[tick % worldMessages.length];
+  const srcFaction = allFactionIds[tick % allFactionIds.length];
   const srcUsers = factionUsers[srcFaction];
-  const srcUser = srcUsers[Math.floor(Math.random() * srcUsers.length)];
+  const srcUser = srcUsers[tick % srcUsers.length];
   newMessages.push({
     id: `tick-w-${tick}`,
     username: srcUser.name,
@@ -538,12 +538,16 @@ export default function NodeChat({
   const [messages] = useState(() => generateMessages(factionId, node?.name));
 
   const filteredMessages = [...messages, ...tickMessages, ...localMessages]
-    .filter((m) => filter === "world" ? true : m.type === filter)
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    .filter((m) => m.type === filter)
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    .slice(-MAX_CHANNEL_MESSAGES);
 
-  // Scroll to bottom when messages change or filter changes
+  // Scroll chat container to bottom when messages change or filter changes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = chatContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [filteredMessages.length, filter]);
 
   const handleSend = () => {
@@ -628,12 +632,9 @@ export default function NodeChat({
           {filters.map((f) => {
             const isActive = filter === f.key;
             const allMsgs = [...messages, ...tickMessages, ...localMessages];
-            const count =
-              f.key === "world"
-                ? allMsgs.length
-                : allMsgs.filter(
-                    (m) => m.type === f.key,
-                  ).length;
+            const count = allMsgs.filter(
+              (m) => m.type === f.key,
+            ).length;
 
             return (
               <button
@@ -736,8 +737,8 @@ export default function NodeChat({
                       <span
                         className="rounded px-1 py-0.5 text-[8px] font-bold uppercase tracking-wider"
                         style={{
-                          background: `${theme.primary}10`,
-                          color: "var(--color-muted)",
+                          background: `${factionThemeColors[msg.factionId]}15`,
+                          color: factionThemeColors[msg.factionId],
                         }}
                       >
                         {msg.factionId}

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useFaction } from "@/context/FactionContext";
 import { useTick } from "@/context/TickContext";
-import { GridNode } from "@/data/factionData";
+import { FactionId, GridNode } from "@/data/factionData";
 import NodeChat, { generateTickMessages, type ChatMessage } from "@/components/NodeChat";
 
 function getConnectionColor(health: number): string {
@@ -93,19 +93,32 @@ export default function FactionGridMap() {
   const chatRef = useRef<HTMLDivElement>(null);
   const { tick } = useTick();
   const prevTickRef = useRef(tick);
-  const [tickMessages, setTickMessages] = useState<ChatMessage[]>([]);
+  const allFactionIds: FactionId[] = ["fire", "earth", "water", "wood", "metal"];
+  const [tickMessagesByFaction, setTickMessagesByFaction] = useState<
+    Record<FactionId, ChatMessage[]>
+  >({ fire: [], earth: [], water: [], wood: [], metal: [] });
 
-  // Generate chat messages every tick, regardless of chat panel visibility
+  // Generate chat messages for ALL factions every tick
   useEffect(() => {
     if (tick === prevTickRef.current) return;
     prevTickRef.current = tick;
 
-    const nodeName = selectedNode
-      ? faction.gridNodes.find((n) => n.id === selectedNode)?.name
-      : undefined;
-    const newMessages = generateTickMessages(tick, factionId, nodeName);
-    setTickMessages((prev) => [...prev, ...newMessages]);
-  }, [tick, factionId, selectedNode, faction.gridNodes]);
+    setTickMessagesByFaction((prev) => {
+      const next = { ...prev };
+      for (const fid of allFactionIds) {
+        // Only include node-specific messages for the currently viewed faction/node
+        const nodeName =
+          fid === factionId && selectedNode
+            ? faction.gridNodes.find((n) => n.id === selectedNode)?.name
+            : undefined;
+        const newMessages = generateTickMessages(tick, fid, nodeName);
+        const combined = [...prev[fid], ...newMessages];
+        next[fid] = combined.length > 500 ? combined.slice(-500) : combined;
+      }
+      return next;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]);
 
   const nodeMap = new Map(faction.gridNodes.map((n) => [n.id, n]));
   const activeNodeData = activeNode ? nodeMap.get(activeNode) : null;
@@ -151,14 +164,14 @@ export default function FactionGridMap() {
       {/* Chat Panel (always visible, above grid) */}
       <div ref={chatRef} className="mb-6" style={{ scrollMarginTop: "88px" }}>
         <NodeChat
-          key={selectedNode ?? "world"}
+          key={`${factionId}-${selectedNode ?? "world"}`}
           node={selectedNodeData ?? undefined}
           factionId={factionId}
           factionName={faction.name}
           factionEmoji={faction.emoji}
           theme={faction.theme}
           onReturn={selectedNode ? handleReturn : undefined}
-          tickMessages={tickMessages}
+          tickMessages={tickMessagesByFaction[factionId]}
         />
       </div>
 

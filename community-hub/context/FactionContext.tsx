@@ -26,13 +26,13 @@ interface FactionContextValue {
   setFactionId: (id: FactionId) => void;
   isLoading: boolean;
   /**
-   * Apply one tick of simulation to the current faction data.
+   * Apply one tick of simulation to ALL factions.
    * Updates champion return rates (scaled by instability) and
    * facility section health (based on assigned champions' return rates).
    *
-   * @param assignments — map of sectionId → championId[] from ChampionAssignmentContext
+   * @param allAssignments — map of factionId → (sectionId → championId[]) from ChampionAssignmentContext
    */
-  advanceTickUpdate: (assignments: Record<string, string[]>) => void;
+  advanceTickUpdate: (allAssignments: Record<FactionId, Record<string, string[]>>) => void;
 }
 
 const FactionContext = createContext<FactionContextValue | null>(null);
@@ -191,13 +191,22 @@ function mergeApiData(config: FactionConfig, api: any): FactionData {
 
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+const ALL_FACTION_IDS: FactionId[] = ["fire", "earth", "water", "wood", "metal"];
+
 export function FactionProvider({ children }: { children: ReactNode }) {
   const [factionId, setFactionIdState] = useState<FactionId>("fire");
   const [mounted, setMounted] = useState(false);
-  const [faction, setFaction] = useState<FactionData>(() =>
-    buildFromConfig(getFactionConfig("fire"))
+  const [allFactions, setAllFactions] = useState<Record<FactionId, FactionData>>(
+    () => {
+      const initial = {} as Record<FactionId, FactionData>;
+      for (const id of ALL_FACTION_IDS) {
+        initial[id] = buildFromConfig(getFactionConfig(id));
+      }
+      return initial;
+    },
   );
   const [isLoading, setIsLoading] = useState(true);
+  const faction = allFactions[factionId];
 
   // Restore faction from localStorage
   useEffect(() => {
@@ -219,80 +228,84 @@ export function FactionProvider({ children }: { children: ReactNode }) {
     }
   }, [factionId, mounted]);
 
-  // Fetch faction data from API when factionId changes
-  const fetchFactionData = useCallback(async (id: FactionId) => {
-    const config = getFactionConfig(id);
+  // Fetch one faction's data with full fallback logic
+  const fetchSingleFaction = useCallback(
+    async (id: FactionId): Promise<FactionData> => {
+      const config = getFactionConfig(id);
+      try {
+        const res = await fetch(`/api/factions/${id}`);
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
 
-    // Immediately set a config-only version so the UI isn't blank
-    setFaction(buildFromConfig(config));
-    setIsLoading(true);
+        const data = await res.json();
+        const merged = mergeApiData(config, data);
 
-    try {
-      const res = await fetch(`/api/factions/${id}`);
-      if (!res.ok) {
-        console.error(`API error: ${res.status}`);
-        // Fall back to static-only data from the old factionData module
-        const { getFaction } = await import("@/data/factionData");
-        setFaction(getFaction(id));
-        return;
-      }
-
-      const data = await res.json();
-      const merged = mergeApiData(config, data);
-
-      // If the DB returned no facility sections (e.g. not yet seeded), fall back
-      if (merged.facilitySections.length === 0 || merged.champions.length === 0) {
-        const { getFaction } = await import("@/data/factionData");
-        const fallback = getFaction(id);
-        setFaction({
-          ...merged,
-          facilitySections:
-            merged.facilitySections.length > 0
-              ? merged.facilitySections
-              : fallback.facilitySections,
-          gridNodes:
-            merged.gridNodes.length > 0
-              ? merged.gridNodes
-              : fallback.gridNodes,
-          gridEdges:
-            merged.gridEdges.length > 0
-              ? merged.gridEdges
-              : fallback.gridEdges,
-          champions:
-            merged.champions.length > 0
-              ? merged.champions
-              : fallback.champions,
-          userProfile:
-            merged.userProfile.name
+        if (
+          merged.facilitySections.length === 0 ||
+          merged.champions.length === 0
+        ) {
+          const { getFaction } = await import("@/data/factionData");
+          const fallback = getFaction(id);
+          return {
+            ...merged,
+            facilitySections:
+              merged.facilitySections.length > 0
+                ? merged.facilitySections
+                : fallback.facilitySections,
+            gridNodes:
+              merged.gridNodes.length > 0
+                ? merged.gridNodes
+                : fallback.gridNodes,
+            gridEdges:
+              merged.gridEdges.length > 0
+                ? merged.gridEdges
+                : fallback.gridEdges,
+            champions:
+              merged.champions.length > 0
+                ? merged.champions
+                : fallback.champions,
+            userProfile: merged.userProfile.name
               ? merged.userProfile
               : fallback.userProfile,
-        });
-      } else {
-        setFaction(merged);
+          };
+        }
+        return merged;
+      } catch (err) {
+        console.error(`Failed to fetch faction ${id}:`, err);
+        const { getFaction } = await import("@/data/factionData");
+        return getFaction(id);
       }
-    } catch (err) {
-      console.error("Failed to fetch faction data:", err);
-      // Fall back to hardcoded data
-      const { getFaction } = await import("@/data/factionData");
-      setFaction(getFaction(id));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
-  // Trigger fetch when mounted or factionId changes
+  // Fetch ALL factions on mount
   useEffect(() => {
-    if (mounted) {
-      fetchFactionData(factionId);
-    }
-  }, [factionId, mounted, fetchFactionData]);
+    if (!mounted) return;
+    setIsLoading(true);
+
+    Promise.all(
+      ALL_FACTION_IDS.map(async (id) => ({
+        id,
+        data: await fetchSingleFaction(id),
+      })),
+    ).then((results) => {
+      setAllFactions((prev) => {
+        const next = { ...prev };
+        for (const { id, data } of results) {
+          next[id] = data;
+        }
+        return next;
+      });
+      setIsLoading(false);
+    });
+  }, [mounted, fetchSingleFaction]);
 
   const setFactionId = (id: FactionId) => {
     setFactionIdState(id);
   };
 
   /**
-   * Atomically update champions and facility sections for one tick.
+   * Atomically update champions and facility sections for ALL factions in one tick.
    *
    * Champion return-rate change:
    *   - Max absolute delta is 0.001.
@@ -306,76 +319,84 @@ export function FactionProvider({ children }: { children: ReactNode }) {
    *     the average return rate of the champions stationed there.
    */
   const advanceTickUpdate = useCallback(
-    (assignments: Record<string, string[]>) => {
-      setFaction((prev) => {
-        // 1. Update champion return rates
-        const updatedChampions = prev.champions.map((champion) => {
-          // Gentle curve: even stability-98 champions get a floor of 0.3,
-          // while stability-65 champions reach ~1.0.
-          const raw = (100 - champion.stabilityScore) / 50;
-          const instabilityFactor = Math.min(1, Math.max(0.3, raw));
-          const MAX_DELTA = 0.001;
+    (allAssignments: Record<FactionId, Record<string, string[]>>) => {
+      setAllFactions((prev) => {
+        const next = { ...prev };
 
-          // Higher stability ⇒ slightly higher chance of no change
-          const noChangeChance = 0.1 + 0.1 * (1 - instabilityFactor);
-          if (Math.random() < noChangeChance) {
-            return champion; // no change this tick
-          }
+        for (const fid of ALL_FACTION_IDS) {
+          const factionData = prev[fid];
+          if (factionData.champions.length === 0) continue;
 
-          const delta =
-            (Math.random() * 2 - 1) * MAX_DELTA * instabilityFactor;
+          const assignments = allAssignments[fid] ?? {};
 
-          return {
-            ...champion,
-            returnRate: champion.returnRate + delta,
-          };
-        });
+          // 1. Update champion return rates
+          const updatedChampions = factionData.champions.map((champion) => {
+            const raw = (100 - champion.stabilityScore) / 50;
+            const instabilityFactor = Math.min(1, Math.max(0.3, raw));
+            const MAX_DELTA = 0.001;
 
-        // 2. Update facility section health
-        const updatedSections = prev.facilitySections.map((section) => {
-          const assignedIds = assignments[section.id] ?? [];
-          let healthDelta: number;
-
-          if (assignedIds.length === 0) {
-            // No champions → slight decay
-            healthDelta = -(Math.random() * 0.4 + 0.1);
-          } else {
-            // Compute average return rate of assigned champions
-            const assigned = assignedIds
-              .map((id) => updatedChampions.find((c) => c.id === id))
-              .filter(Boolean) as typeof updatedChampions;
-
-            const avgRate =
-              assigned.length > 0
-                ? assigned.reduce((sum, c) => sum + c.returnRate, 0) /
-                  assigned.length
-                : 0;
-
-            if (avgRate > 0.001) {
-              healthDelta = Math.random() * 0.3 + 0.05; // positive
-            } else if (avgRate < -0.001) {
-              healthDelta = -(Math.random() * 0.3 + 0.05); // negative
-            } else {
-              healthDelta = (Math.random() - 0.5) * 0.15; // roughly neutral
+            const noChangeChance = 0.1 + 0.1 * (1 - instabilityFactor);
+            if (Math.random() < noChangeChance) {
+              return champion;
             }
-          }
 
-          const newHealth = Math.min(
-            100,
-            Math.max(0, section.health + healthDelta),
+            const delta =
+              (Math.random() * 2 - 1) * MAX_DELTA * instabilityFactor;
+
+            return {
+              ...champion,
+              returnRate: champion.returnRate + delta,
+            };
+          });
+
+          // 2. Update facility section health
+          const updatedSections = factionData.facilitySections.map(
+            (section) => {
+              const assignedIds = assignments[section.id] ?? [];
+              let healthDelta: number;
+
+              if (assignedIds.length === 0) {
+                healthDelta = -(Math.random() * 0.4 + 0.1);
+              } else {
+                const assigned = assignedIds
+                  .map((id) => updatedChampions.find((c) => c.id === id))
+                  .filter(Boolean) as typeof updatedChampions;
+
+                const avgRate =
+                  assigned.length > 0
+                    ? assigned.reduce((sum, c) => sum + c.returnRate, 0) /
+                      assigned.length
+                    : 0;
+
+                if (avgRate > 0.001) {
+                  healthDelta = Math.random() * 0.3 + 0.05;
+                } else if (avgRate < -0.001) {
+                  healthDelta = -(Math.random() * 0.3 + 0.05);
+                } else {
+                  healthDelta = (Math.random() - 0.5) * 0.15;
+                }
+              }
+
+              const newHealth = Math.min(
+                100,
+                Math.max(0, section.health + healthDelta),
+              );
+
+              return {
+                ...section,
+                health: Math.round(newHealth * 10) / 10,
+              };
+            },
           );
 
-          return {
-            ...section,
-            health: Math.round(newHealth * 10) / 10,
+          next[fid] = {
+            ...factionData,
+            champions: updatedChampions,
+            facilitySections: updatedSections,
           };
-        });
+        }
 
-        return {
-          ...prev,
-          champions: updatedChampions,
-          facilitySections: updatedSections,
-        };
+        return next;
       });
     },
     [],
