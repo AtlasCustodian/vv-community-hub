@@ -12,8 +12,8 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const { factionId, faction, setFactionId } = useFaction();
-  const { tick, advanceTick } = useTick();
+  const { factionId, faction, setFactionId, resetToInitial } = useFaction();
+  const { tick, advanceTick, resetTick } = useTick();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -163,6 +163,16 @@ export default function Sidebar() {
           >
             {tick}
           </span>
+        </button>
+
+        <button
+          onClick={() => { resetToInitial(); resetTick(); }}
+          className="flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-muted transition-all duration-200 hover:border-red-500/50 hover:bg-surface-hover hover:text-red-400 active:scale-[0.97]"
+        >
+          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span className="truncate">Reset Timeline</span>
         </button>
 
         <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface transition-colors hover:border-accent-primary/30">

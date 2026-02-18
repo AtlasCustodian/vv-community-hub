@@ -88,7 +88,7 @@ export async function GET(
 
       // 5. Infrastructure - facility sections
       const facilitySectionsRes = await client.query(
-        "SELECT id, name, capacity, details FROM infrastructure WHERE faction_id = $1 AND details->>'type' = 'facility_section' ORDER BY id ASC",
+        "SELECT id, name, health, details FROM infrastructure WHERE faction_id = $1 AND details->>'type' = 'facility_section' ORDER BY id ASC",
         [factionId]
       );
       const facilitySections = facilitySectionsRes.rows.map((row: DbRow) => {
@@ -96,7 +96,7 @@ export async function GET(
         return {
           id: row.id as string,
           name: row.name as string,
-          health: row.capacity as number,
+          health: row.health as number,
           description: (details?.description as string) ?? "",
           stats: (details?.stats as Record<string, string>) ?? {},
         };
@@ -113,7 +113,7 @@ export async function GET(
         "relay_node",
       ];
       const gridNodesRes = await client.query(
-        "SELECT id, name, capacity, details FROM infrastructure WHERE faction_id = $1 AND details->>'type' = ANY($2) ORDER BY id ASC",
+        "SELECT id, name, health, details FROM infrastructure WHERE faction_id = $1 AND details->>'type' = ANY($2) ORDER BY id ASC",
         [factionId, gridNodeTypes]
       );
       const gridNodes = gridNodesRes.rows.map((row: DbRow) => {
@@ -121,7 +121,7 @@ export async function GET(
         return {
           id: row.id as string,
           name: row.name as string,
-          health: row.capacity as number,
+          health: row.health as number,
           x: (details?.x as number) ?? 0,
           y: (details?.y as number) ?? 0,
           assignedUsers: (details?.assigned_users as number) ?? 0,

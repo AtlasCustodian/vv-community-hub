@@ -504,7 +504,10 @@ async function seed() {
       )
     `);
 
-    console.log("  ✓ schema migrations applied (chronicle_posts, user columns, user_friends)");
+    // Add health column to infrastructure table
+    await client.query(`ALTER TABLE infrastructure ADD COLUMN IF NOT EXISTS health DOUBLE PRECISION`);
+
+    console.log("  ✓ schema migrations applied (chronicle_posts, user columns, user_friends, infrastructure health)");
 
     // ── 1. Update faction standings ──────────────────────────────────────────
     console.log("\n[1/7] Updating faction standings...");
@@ -674,8 +677,8 @@ async function seed() {
 
     for (const item of coreInfra) {
       await client.query(
-        "INSERT INTO infrastructure (id, name, zone_id, faction_id, status, capacity, details) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-        [item.id, item.name, item.zone_id, item.faction_id, item.status, item.capacity, JSON.stringify(item.details)]
+        "INSERT INTO infrastructure (id, name, zone_id, faction_id, status, capacity, health, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        [item.id, item.name, item.zone_id, item.faction_id, item.status, item.capacity, item.capacity, JSON.stringify(item.details)]
       );
       infraCount++;
     }
@@ -686,8 +689,8 @@ async function seed() {
       for (const section of data.facilitySections) {
         const status = section.health >= 80 ? "operational" : section.health >= 60 ? "degraded" : "critical";
         await client.query(
-          "INSERT INTO infrastructure (id, name, zone_id, faction_id, status, capacity, details) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-          [section.id, section.name, data.zone, factionId, status, section.health, JSON.stringify(section.details)]
+          "INSERT INTO infrastructure (id, name, zone_id, faction_id, status, capacity, health, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+          [section.id, section.name, data.zone, factionId, status, 100, section.health, JSON.stringify(section.details)]
         );
         infraCount++;
       }
@@ -696,8 +699,8 @@ async function seed() {
       for (const node of data.gridNodes) {
         const status = node.health >= 80 ? "operational" : node.health >= 60 ? "degraded" : "critical";
         await client.query(
-          "INSERT INTO infrastructure (id, name, zone_id, faction_id, status, capacity, details) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-          [node.id, node.name, data.zone, factionId, status, node.health, JSON.stringify(node.details)]
+          "INSERT INTO infrastructure (id, name, zone_id, faction_id, status, capacity, health, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+          [node.id, node.name, data.zone, factionId, status, 100, node.health, JSON.stringify(node.details)]
         );
         infraCount++;
       }

@@ -26,6 +26,8 @@ export default function TickEffects() {
     if (tick === prevTick.current) return;
     prevTick.current = tick;
 
+    if (tick === 0) return;
+
     const allAssignments = {} as Record<FactionId, Record<string, string[]>>;
     for (const fid of ALL_FACTION_IDS) {
       allAssignments[fid] = getFactionAssignments(fid);

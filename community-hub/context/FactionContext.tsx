@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import type {
@@ -35,6 +36,8 @@ interface FactionContextValue {
    * @param allAssignments — map of factionId → (sectionId → championId[]) from ChampionAssignmentContext
    */
   advanceTickUpdate: (allAssignments: Record<FactionId, Record<string, string[]>>) => void;
+  /** Reset all faction data to the state at first load */
+  resetToInitial: () => void;
 }
 
 const FactionContext = createContext<FactionContextValue | null>(null);
@@ -224,6 +227,7 @@ export function FactionProvider({ children }: { children: ReactNode }) {
     },
   );
   const [isLoading, setIsLoading] = useState(true);
+  const initialFactionsRef = useRef<Record<FactionId, FactionData> | null>(null);
   const faction = allFactions[factionId];
 
   // Restore faction from localStorage
@@ -315,13 +319,14 @@ export function FactionProvider({ children }: { children: ReactNode }) {
         data: await fetchSingleFaction(id),
       })),
     ).then((results) => {
-      setAllFactions((prev) => {
-        const next = { ...prev };
-        for (const { id, data } of results) {
-          next[id] = data;
-        }
-        return next;
-      });
+      const next = {} as Record<FactionId, FactionData>;
+      for (const { id, data } of results) {
+        next[id] = data;
+      }
+      setAllFactions(next);
+      if (!initialFactionsRef.current) {
+        initialFactionsRef.current = JSON.parse(JSON.stringify(next));
+      }
       setIsLoading(false);
     });
   }, [mounted, fetchSingleFaction]);
@@ -329,6 +334,12 @@ export function FactionProvider({ children }: { children: ReactNode }) {
   const setFactionId = (id: FactionId) => {
     setFactionIdState(id);
   };
+
+  const resetToInitial = useCallback(() => {
+    if (initialFactionsRef.current) {
+      setAllFactions(JSON.parse(JSON.stringify(initialFactionsRef.current)));
+    }
+  }, []);
 
   /**
    * Atomically update champions and facility sections for ALL factions in one tick.
@@ -430,7 +441,7 @@ export function FactionProvider({ children }: { children: ReactNode }) {
 
   return (
     <FactionContext.Provider
-      value={{ factionId, faction, allFactions, setFactionId, isLoading, advanceTickUpdate }}
+      value={{ factionId, faction, allFactions, setFactionId, isLoading, advanceTickUpdate, resetToInitial }}
     >
       {children}
     </FactionContext.Provider>
