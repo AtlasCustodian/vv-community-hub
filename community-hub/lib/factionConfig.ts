@@ -4,8 +4,10 @@
  * UI configuration: themes, colors, icons, page titles, achievements,
  * tools, protocols, and per-section visual mappings.
  *
- * Dynamic data (champions, infrastructure health, user profiles, etc.)
- * is fetched from the Railway database and merged in at runtime.
+ * Dynamic data (champions, infrastructure health, user profiles, chat users,
+ * friend lists, etc.) is fetched from the Railway database and merged at
+ * runtime. The userProfileDefaults here serve as fallback only — the DB is
+ * the canonical source for name, role, joinDate, bio, and avatarEmoji.
  */
 
 import type {

@@ -97,6 +97,12 @@ export interface FactionTheme {
   gradientTo: string;
 }
 
+export interface ChatUser {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
 export interface FactionData {
   id: FactionId;
   name: string;
@@ -122,6 +128,8 @@ export interface FactionData {
   protocolCategories: string[];
   protocols: FactionProtocol[];
   champions: Champion[];
+  chatUsers: ChatUser[];
+  friendUserIds: string[];
 }
 
 // ─── Fire / The Marshalls ───────────────────────────────────────────────────
@@ -249,6 +257,17 @@ const fireFaction: FactionData = {
     { id: "f-16", name: "Agna Vulcanis", returnRate: -0.0003, startingReturnRate: -0.0003, stabilityScore: 86, currentAssignment: "Not Assigned" },
     { id: "f-17", name: "Therrik Moltencore", returnRate: 0.0044, startingReturnRate: 0.0044, stabilityScore: 65, currentAssignment: "Not Assigned" },
   ],
+  chatUsers: [
+    { id: "fire_01", name: "Hakan", emoji: "🔥" },
+    { id: "fire_02", name: "Sere", emoji: "🔥" },
+    { id: "fire_03", name: "Dax Kindler", emoji: "🔥" },
+    { id: "fire_04", name: "Volara", emoji: "🔥" },
+    { id: "fire_05", name: "Cael Ashburn", emoji: "🔥" },
+    { id: "fire_06", name: "Jyn Ember", emoji: "🔥" },
+    { id: "fire_07", name: "Torrin", emoji: "🔥" },
+    { id: "fire_08", name: "Ruska Flint", emoji: "🔥" },
+  ],
+  friendUserIds: ["fire_02", "fire_06", "fire_08"],
 };
 
 // ─── Earth / The Ironlord ───────────────────────────────────────────────────
@@ -369,6 +388,17 @@ const earthFaction: FactionData = {
     { id: "e-17", name: "Jareth Plazaguard", returnRate: 0.0078, startingReturnRate: 0.0078, stabilityScore: 75, currentAssignment: "Not Assigned" },
     { id: "e-18", name: "Wren Festivale", returnRate: 0.0051, startingReturnRate: 0.0051, stabilityScore: 70, currentAssignment: "Not Assigned" },
   ],
+  chatUsers: [
+    { id: "earth_01", name: "Kael", emoji: "🏛️" },
+    { id: "earth_02", name: "Mira Copperhand", emoji: "🏛️" },
+    { id: "earth_03", name: "Aldric Stoneweave", emoji: "🏛️" },
+    { id: "earth_04", name: "Brea Goldheart", emoji: "🏛️" },
+    { id: "earth_05", name: "Felton", emoji: "🏛️" },
+    { id: "earth_06", name: "Sula Merchant", emoji: "🏛️" },
+    { id: "earth_07", name: "Orik Broadstone", emoji: "🏛️" },
+    { id: "earth_08", name: "Nella", emoji: "🏛️" },
+  ],
+  friendUserIds: ["earth_02", "earth_08", "earth_05"],
 };
 
 // ─── Water / Bluecrest ──────────────────────────────────────────────────────
@@ -490,6 +520,17 @@ const waterFaction: FactionData = {
     { id: "w-15", name: "Crag Barnaclefast", returnRate: 0.0005, startingReturnRate: 0.0005, stabilityScore: 76, currentAssignment: "Not Assigned" },
     { id: "w-16", name: "Sable Dawnshore", returnRate: 0.0059, startingReturnRate: 0.0059, stabilityScore: 92, currentAssignment: "Not Assigned" },
   ],
+  chatUsers: [
+    { id: "water_01", name: "Dirge Gladstone", emoji: "🌊" },
+    { id: "water_02", name: "Lorinn Deepwatch", emoji: "🌊" },
+    { id: "water_03", name: "Corvatz", emoji: "🌊" },
+    { id: "water_04", name: "Shale Brine", emoji: "🌊" },
+    { id: "water_05", name: "Kai Stormbreak", emoji: "🌊" },
+    { id: "water_06", name: "Nessa Tidecaller", emoji: "🌊" },
+    { id: "water_07", name: "Rodge Floodgate", emoji: "🌊" },
+    { id: "water_08", name: "Yara Wavehand", emoji: "🌊" },
+  ],
+  friendUserIds: ["water_05", "water_06", "water_07"],
 };
 
 // ─── Wood / Stewards ────────────────────────────────────────────────────────
@@ -612,6 +653,17 @@ const woodFaction: FactionData = {
     { id: "wd-18", name: "Hazel Creekbend", returnRate: -0.0010, startingReturnRate: -0.0010, stabilityScore: 81, currentAssignment: "Not Assigned" },
     { id: "wd-19", name: "Nettle Ridgeplow", returnRate: 0.0031, startingReturnRate: 0.0031, stabilityScore: 89, currentAssignment: "Not Assigned" },
   ],
+  chatUsers: [
+    { id: "wood_01", name: "Tori", emoji: "🌿" },
+    { id: "wood_02", name: "Brenn Rootfield", emoji: "🌿" },
+    { id: "wood_03", name: "Marda Greenshade", emoji: "🌿" },
+    { id: "wood_04", name: "Olwen Seedkeeper", emoji: "🌿" },
+    { id: "wood_05", name: "Fael Harrow", emoji: "🌿" },
+    { id: "wood_06", name: "Linna Thornbrook", emoji: "🌿" },
+    { id: "wood_07", name: "Garret Fieldhand", emoji: "🌿" },
+    { id: "wood_08", name: "Pim", emoji: "🌿" },
+  ],
+  friendUserIds: ["wood_02", "wood_06", "wood_08"],
 };
 
 // ─── Metal / Artificers ─────────────────────────────────────────────────────
@@ -739,6 +791,17 @@ const metalFaction: FactionData = {
     { id: "m-19", name: "Corvid Archivex", returnRate: 0.0100, startingReturnRate: 0.0100, stabilityScore: 83, currentAssignment: "Not Assigned" },
     { id: "m-20", name: "Lucen Beaconspire", returnRate: 0.0053, startingReturnRate: 0.0053, stabilityScore: 81, currentAssignment: "Not Assigned" },
   ],
+  chatUsers: [
+    { id: "metal_01", name: "Ani Vildor", emoji: "⚗️" },
+    { id: "metal_02", name: "Solen Brightlens", emoji: "⚗️" },
+    { id: "metal_03", name: "Dr. Caro", emoji: "⚗️" },
+    { id: "metal_04", name: "Fen Wirespark", emoji: "⚗️" },
+    { id: "metal_05", name: "Tova Relay", emoji: "⚗️" },
+    { id: "metal_06", name: "Kel Calibrate", emoji: "⚗️" },
+    { id: "metal_07", name: "Rune Datastream", emoji: "⚗️" },
+    { id: "metal_08", name: "Zara Ohmfield", emoji: "⚗️" },
+  ],
+  friendUserIds: ["metal_02", "metal_04", "metal_05"],
 };
 
 // ─── Exports ────────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useFaction } from "@/context/FactionContext";
 import { useTick } from "@/context/TickContext";
 import { FactionId, GridNode } from "@/data/factionData";
-import NodeChat, { generateTickMessages, type ChatMessage } from "@/components/NodeChat";
+import NodeChat, { generateTickMessages, type ChatMessage, type AllFactionChatUsers } from "@/components/NodeChat";
 
 function getConnectionColor(health: number): string {
   if (health >= 75) return "#10b981";
@@ -87,7 +87,7 @@ function NodeTooltip({
 }
 
 export default function FactionGridMap() {
-  const { factionId, faction } = useFaction();
+  const { factionId, faction, allFactions } = useFaction();
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -98,6 +98,12 @@ export default function FactionGridMap() {
     Record<FactionId, ChatMessage[]>
   >({ fire: [], earth: [], water: [], wood: [], metal: [] });
 
+  // Build cross-faction chat user map for world messages
+  const allFactionChatUsers: AllFactionChatUsers = {};
+  for (const fid of allFactionIds) {
+    allFactionChatUsers[fid] = allFactions[fid].chatUsers;
+  }
+
   // Generate chat messages for ALL factions every tick
   useEffect(() => {
     if (tick === prevTickRef.current) return;
@@ -106,12 +112,12 @@ export default function FactionGridMap() {
     setTickMessagesByFaction((prev) => {
       const next = { ...prev };
       for (const fid of allFactionIds) {
-        // Only include node-specific messages for the currently viewed faction/node
+        const fData = allFactions[fid];
         const nodeName =
           fid === factionId && selectedNode
             ? faction.gridNodes.find((n) => n.id === selectedNode)?.name
             : undefined;
-        const newMessages = generateTickMessages(tick, fid, nodeName);
+        const newMessages = generateTickMessages(tick, fid, fData.chatUsers, fData.friendUserIds, allFactionChatUsers, nodeName);
         const combined = [...prev[fid], ...newMessages];
         next[fid] = combined.length > 500 ? combined.slice(-500) : combined;
       }
@@ -175,6 +181,8 @@ export default function FactionGridMap() {
           theme={faction.theme}
           onReturn={selectedNode ? handleReturn : undefined}
           tickMessages={tickMessagesByFaction[factionId]}
+          chatUsers={faction.chatUsers}
+          friendUserIds={faction.friendUserIds}
         />
       </div>
 

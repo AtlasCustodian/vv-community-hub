@@ -16,6 +16,7 @@ import type {
   GridNode,
   GridEdge,
   Champion,
+  ChatUser,
   UserProfile,
 } from "@/data/factionData";
 import { getFactionConfig, type FactionConfig } from "@/lib/factionConfig";
@@ -23,6 +24,7 @@ import { getFactionConfig, type FactionConfig } from "@/lib/factionConfig";
 interface FactionContextValue {
   factionId: FactionId;
   faction: FactionData;
+  allFactions: Record<FactionId, FactionData>;
   setFactionId: (id: FactionId) => void;
   isLoading: boolean;
   /**
@@ -74,6 +76,8 @@ function buildFromConfig(config: FactionConfig): FactionData {
     protocolCategories: config.protocolCategories,
     protocols: config.protocols,
     champions: [],
+    chatUsers: [],
+    friendUserIds: [],
   };
 }
 
@@ -84,14 +88,25 @@ function buildFromConfig(config: FactionConfig): FactionData {
  * presentation details (icons, colors, stat labels, descriptions).
  */
 function mergeApiData(config: FactionConfig, api: any): FactionData {
-  // Build user profile: name from DB, role/bio/etc from static config
+  // Build user profile: prefer DB values, fall back to static config
+  const mu = api.mainUser;
   const userProfile: UserProfile = {
-    name: api.mainUser?.name ?? "",
-    role: config.userProfileDefaults.role,
-    joinDate: config.userProfileDefaults.joinDate,
-    bio: config.userProfileDefaults.bio,
-    avatarEmoji: config.userProfileDefaults.avatarEmoji,
+    name: mu?.name ?? "",
+    role: mu?.role ?? config.userProfileDefaults.role,
+    joinDate: mu?.join_date ?? config.userProfileDefaults.joinDate,
+    bio: mu?.bio ?? config.userProfileDefaults.bio,
+    avatarEmoji: mu?.avatar_emoji ?? config.userProfileDefaults.avatarEmoji,
   };
+
+  // Map chat users from DB (non-champion users with emoji)
+  const chatUsers: ChatUser[] = (api.users ?? []).map((u: any) => ({
+    id: u.id as string,
+    name: u.name as string,
+    emoji: (u.avatarEmoji as string | null) ?? config.emoji,
+  }));
+
+  // Friend user ids from DB
+  const friendUserIds: string[] = api.friendUserIds ?? [];
 
   // Map champions from DB
   const champions: Champion[] = (api.champions ?? []).map((c: any) => ({
@@ -187,6 +202,8 @@ function mergeApiData(config: FactionConfig, api: any): FactionData {
     protocolCategories: config.protocolCategories,
     protocols: config.protocols,
     champions,
+    chatUsers,
+    friendUserIds,
   };
 }
 
@@ -267,6 +284,14 @@ export function FactionProvider({ children }: { children: ReactNode }) {
             userProfile: merged.userProfile.name
               ? merged.userProfile
               : fallback.userProfile,
+            chatUsers:
+              merged.chatUsers.length > 0
+                ? merged.chatUsers
+                : fallback.chatUsers,
+            friendUserIds:
+              merged.friendUserIds.length > 0
+                ? merged.friendUserIds
+                : fallback.friendUserIds,
           };
         }
         return merged;
@@ -405,7 +430,7 @@ export function FactionProvider({ children }: { children: ReactNode }) {
 
   return (
     <FactionContext.Provider
-      value={{ factionId, faction, setFactionId, isLoading, advanceTickUpdate }}
+      value={{ factionId, faction, allFactions, setFactionId, isLoading, advanceTickUpdate }}
     >
       {children}
     </FactionContext.Provider>

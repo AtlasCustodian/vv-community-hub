@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { FactionId, GridNode } from "@/data/factionData";
+import { FactionId, GridNode, ChatUser } from "@/data/factionData";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -25,70 +25,13 @@ interface NodeChatProps {
   theme: { primary: string; secondary: string; gradientFrom: string; gradientTo: string };
   onReturn?: () => void;
   tickMessages?: ChatMessage[];
+  chatUsers: ChatUser[];
+  friendUserIds: string[];
 }
 
-// ─── Fake User Data ─────────────────────────────────────────────────────────
-
-const factionUsers: Record<FactionId, { name: string; emoji: string }[]> = {
-  fire: [
-    { name: "Hakan", emoji: "🔥" },
-    { name: "Sere", emoji: "🔥" },
-    { name: "Dax Kindler", emoji: "🔥" },
-    { name: "Volara", emoji: "🔥" },
-    { name: "Cael Ashburn", emoji: "🔥" },
-    { name: "Jyn Ember", emoji: "🔥" },
-    { name: "Torrin", emoji: "🔥" },
-    { name: "Ruska Flint", emoji: "🔥" },
-  ],
-  earth: [
-    { name: "Kael", emoji: "🏛️" },
-    { name: "Mira Copperhand", emoji: "🏛️" },
-    { name: "Aldric Stoneweave", emoji: "🏛️" },
-    { name: "Brea Goldheart", emoji: "🏛️" },
-    { name: "Felton", emoji: "🏛️" },
-    { name: "Sula Merchant", emoji: "🏛️" },
-    { name: "Orik Broadstone", emoji: "🏛️" },
-    { name: "Nella", emoji: "🏛️" },
-  ],
-  water: [
-    { name: "Dirge Gladstone", emoji: "🌊" },
-    { name: "Lorinn Deepwatch", emoji: "🌊" },
-    { name: "Corvatz", emoji: "🌊" },
-    { name: "Shale Brine", emoji: "🌊" },
-    { name: "Kai Stormbreak", emoji: "🌊" },
-    { name: "Nessa Tidecaller", emoji: "🌊" },
-    { name: "Rodge Floodgate", emoji: "🌊" },
-    { name: "Yara Wavehand", emoji: "🌊" },
-  ],
-  wood: [
-    { name: "Tori", emoji: "🌿" },
-    { name: "Brenn Rootfield", emoji: "🌿" },
-    { name: "Marda Greenshade", emoji: "🌿" },
-    { name: "Olwen Seedkeeper", emoji: "🌿" },
-    { name: "Fael Harrow", emoji: "🌿" },
-    { name: "Linna Thornbrook", emoji: "🌿" },
-    { name: "Garret Fieldhand", emoji: "🌿" },
-    { name: "Pim", emoji: "🌿" },
-  ],
-  metal: [
-    { name: "Ani Vildor", emoji: "⚗️" },
-    { name: "Solen Brightlens", emoji: "⚗️" },
-    { name: "Dr. Caro", emoji: "⚗️" },
-    { name: "Fen Wirespark", emoji: "⚗️" },
-    { name: "Tova Relay", emoji: "⚗️" },
-    { name: "Kel Calibrate", emoji: "⚗️" },
-    { name: "Rune Datastream", emoji: "⚗️" },
-    { name: "Zara Ohmfield", emoji: "⚗️" },
-  ],
-};
-
-const friendUsers: Record<FactionId, string[]> = {
-  fire: ["Sere", "Jyn Ember", "Ruska Flint"],
-  earth: ["Mira Copperhand", "Nella", "Felton"],
-  water: ["Kai Stormbreak", "Nessa Tidecaller", "Rodge Floodgate"],
-  wood: ["Brenn Rootfield", "Linna Thornbrook", "Pim"],
-  metal: ["Solen Brightlens", "Fen Wirespark", "Tova Relay"],
-};
+export interface AllFactionChatUsers {
+  [factionId: string]: ChatUser[];
+}
 
 // ─── Fake Message Templates ─────────────────────────────────────────────────
 
@@ -344,19 +287,21 @@ const nodeMessageTemplates: Record<FactionId, string[]> = {
 
 function generateMessages(
   factionId: FactionId,
+  users: ChatUser[],
+  friendIds: string[],
+  allFactionUsers?: AllFactionChatUsers,
   nodeName?: string,
 ): ChatMessage[] {
   const msgs: ChatMessage[] = [];
   const allFactionIds: FactionId[] = ["fire", "earth", "water", "wood", "metal"];
-  const friends = friendUsers[factionId];
+  const friendSet = new Set(friendIds);
+  const friendChatUsers = users.filter((u) => friendSet.has(u.id));
   let minutesAgo = 2;
 
-  // World messages — shared across all factions, users cycle through all factions.
-  // Timestamps use deterministic spacing so all factions see the same chat history.
   for (let i = 0; i < worldMessages.length; i++) {
     const srcFaction = allFactionIds[i % allFactionIds.length];
-    const users = factionUsers[srcFaction];
-    const user = users[i % users.length];
+    const srcUsers = allFactionUsers?.[srcFaction] ?? users;
+    const user = srcUsers.length > 0 ? srcUsers[i % srcUsers.length] : { id: "", name: "Unknown", emoji: "🌐" };
     msgs.push({
       id: `w-${i}`,
       username: user.name,
@@ -369,12 +314,10 @@ function generateMessages(
     minutesAgo += 3 + (i % 4);
   }
 
-  // Faction messages
   const fMsgs = factionMessages[factionId];
   minutesAgo = 1;
   for (let i = 0; i < fMsgs.length; i++) {
-    const users = factionUsers[factionId];
-    const user = users[i % users.length];
+    const user = users.length > 0 ? users[i % users.length] : { id: "", name: "Unknown", emoji: "🌐" };
     msgs.push({
       id: `f-${i}`,
       username: user.name,
@@ -387,20 +330,17 @@ function generateMessages(
     minutesAgo += Math.floor(Math.random() * 6) + 3;
   }
 
-  // Friend messages
   const frMsgs = friendMessages[factionId];
   minutesAgo = 3;
   for (let i = 0; i < frMsgs.length; i++) {
-    const friendName = friends[i % friends.length];
-    const user = factionUsers[factionId].find((u) => u.name === friendName) ?? {
-      name: friendName,
-      emoji: factionUsers[factionId][0].emoji,
-    };
+    const friend = friendChatUsers.length > 0
+      ? friendChatUsers[i % friendChatUsers.length]
+      : users.length > 0 ? users[0] : { id: "", name: "Friend", emoji: "👤" };
     msgs.push({
       id: `fr-${i}`,
-      username: user.name,
+      username: friend.name,
       factionId: factionId,
-      factionEmoji: user.emoji,
+      factionEmoji: friend.emoji,
       content: frMsgs[i],
       timestamp: generateTimestamp(minutesAgo),
       type: "friends",
@@ -408,7 +348,6 @@ function generateMessages(
     minutesAgo += Math.floor(Math.random() * 8) + 5;
   }
 
-  // Node-specific messages (only when a node is specified)
   if (!nodeName) return msgs;
   const nTemplates = nodeMessageTemplates[factionId];
   const nodeSpecificMsgs = nTemplates.map((t) =>
@@ -416,8 +355,7 @@ function generateMessages(
   );
   minutesAgo = 2;
   for (let i = 0; i < nodeSpecificMsgs.length; i++) {
-    const users = factionUsers[factionId];
-    const user = users[i % users.length];
+    const user = users.length > 0 ? users[i % users.length] : { id: "", name: "Unknown", emoji: "🌐" };
     msgs.push({
       id: `n-${i}`,
       username: user.name,
@@ -430,7 +368,6 @@ function generateMessages(
     minutesAgo += Math.floor(Math.random() * 6) + 3;
   }
 
-  // Sort by timestamp (most recent first for display, we'll reverse for chat order)
   return msgs;
 }
 
@@ -439,16 +376,20 @@ function generateMessages(
 export function generateTickMessages(
   tick: number,
   factionId: FactionId,
+  users: ChatUser[],
+  friendIds: string[],
+  allFactionUsers?: AllFactionChatUsers,
   nodeName?: string,
 ): ChatMessage[] {
   const newMessages: ChatMessage[] = [];
   const allFactionIds: FactionId[] = ["fire", "earth", "water", "wood", "metal"];
 
-  // World message — deterministic based on tick so all factions see the same one
   const wMsg = worldMessages[tick % worldMessages.length];
   const srcFaction = allFactionIds[tick % allFactionIds.length];
-  const srcUsers = factionUsers[srcFaction];
-  const srcUser = srcUsers[tick % srcUsers.length];
+  const srcUsers = allFactionUsers?.[srcFaction] ?? users;
+  const srcUser = srcUsers.length > 0
+    ? srcUsers[tick % srcUsers.length]
+    : { id: "", name: "Unknown", emoji: "🌐" };
   newMessages.push({
     id: `tick-w-${tick}`,
     username: srcUser.name,
@@ -459,11 +400,11 @@ export function generateTickMessages(
     type: "world",
   });
 
-  // Faction message
   const fMsgs = factionMessages[factionId];
   const fMsg = fMsgs[Math.floor(Math.random() * fMsgs.length)];
-  const fUsers = factionUsers[factionId];
-  const fUser = fUsers[Math.floor(Math.random() * fUsers.length)];
+  const fUser = users.length > 0
+    ? users[Math.floor(Math.random() * users.length)]
+    : { id: "", name: "Unknown", emoji: "🌐" };
   newMessages.push({
     id: `tick-f-${tick}`,
     username: fUser.name,
@@ -474,14 +415,15 @@ export function generateTickMessages(
     type: "faction",
   });
 
-  // Node message (60% chance, only if a node is specified)
   if (nodeName && Math.random() > 0.4) {
     const nTemplates = nodeMessageTemplates[factionId];
     const nMsg = nTemplates[Math.floor(Math.random() * nTemplates.length)].replace(
       /\{NODE\}/g,
       nodeName,
     );
-    const nUser = fUsers[Math.floor(Math.random() * fUsers.length)];
+    const nUser = users.length > 0
+      ? users[Math.floor(Math.random() * users.length)]
+      : { id: "", name: "Unknown", emoji: "🌐" };
     newMessages.push({
       id: `tick-n-${tick}`,
       username: nUser.name,
@@ -493,15 +435,14 @@ export function generateTickMessages(
     });
   }
 
-  // Friend message (50% chance)
   if (Math.random() > 0.5) {
     const frMsgs = friendMessages[factionId];
     const frMsg = frMsgs[Math.floor(Math.random() * frMsgs.length)];
-    const friends = friendUsers[factionId];
-    const friendName = friends[Math.floor(Math.random() * friends.length)];
-    const friendUser = factionUsers[factionId].find(
-      (u) => u.name === friendName,
-    ) ?? { name: friendName, emoji: factionUsers[factionId][0].emoji };
+    const friendSet = new Set(friendIds);
+    const friendChatUsers = users.filter((u) => friendSet.has(u.id));
+    const friendUser = friendChatUsers.length > 0
+      ? friendChatUsers[Math.floor(Math.random() * friendChatUsers.length)]
+      : users.length > 0 ? users[0] : { id: "", name: "Friend", emoji: "👤" };
     newMessages.push({
       id: `tick-fr-${tick}`,
       username: friendUser.name,
@@ -526,6 +467,8 @@ export default function NodeChat({
   theme,
   onReturn,
   tickMessages = [],
+  chatUsers,
+  friendUserIds,
 }: NodeChatProps) {
   const isWorldMode = !node;
   const [filter, setFilter] = useState<MessageFilter>(isWorldMode ? "world" : "node");
@@ -534,8 +477,7 @@ export default function NodeChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Generate seed messages once on mount
-  const [messages] = useState(() => generateMessages(factionId, node?.name));
+  const [messages] = useState(() => generateMessages(factionId, chatUsers, friendUserIds, undefined, node?.name));
 
   const filteredMessages = [...messages, ...tickMessages, ...localMessages]
     .filter((m) => m.type === filter)

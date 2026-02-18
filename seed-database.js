@@ -22,9 +22,31 @@ const factionStandings = {
 // Combines: main userProfile, NodeChat users, and champions from factionData.ts
 // Champions get balance derived from returnRate, standing from stabilityScore
 
+const factionEmojis = {
+  fire: "🔥",
+  earth: "🏛️",
+  water: "🌊",
+  wood: "🌿",
+  metal: "⚗️",
+};
+
+const friendUsersByFaction = {
+  fire: ["Sere", "Jyn Ember", "Ruska Flint"],
+  earth: ["Mira Copperhand", "Nella", "Felton"],
+  water: ["Kai Stormbreak", "Nessa Tidecaller", "Rodge Floodgate"],
+  wood: ["Brenn Rootfield", "Linna Thornbrook", "Pim"],
+  metal: ["Solen Brightlens", "Fen Wirespark", "Tova Relay"],
+};
+
 const factionUsers = {
   fire: {
-    main: { name: "Hakan", role: "Thermtech — Generator 4" },
+    main: {
+      name: "Hakan",
+      role: "Thermtech — Generator 4",
+      joinDate: "Year 12 of the Current Cycle",
+      bio: "Assigned to Generator 4 in the Deeps. Loves the machines, takes double shifts without complaint. Nothing works without us.",
+      avatarEmoji: "🔥",
+    },
     chatUsers: [
       "Sere",
       "Dax Kindler",
@@ -55,7 +77,13 @@ const factionUsers = {
     ],
   },
   earth: {
-    main: { name: "Kael", role: "Master Artisan — The Roots Market" },
+    main: {
+      name: "Kael",
+      role: "Master Artisan — The Roots Market",
+      joinDate: "Year 8 of the Current Cycle",
+      bio: "Master craftsman and guild coordinator in the Roots. Keeps the market thriving, the trades moving, and the culture alive. The island is more than survival — it's a society.",
+      avatarEmoji: "🏛️",
+    },
     chatUsers: [
       "Mira Copperhand",
       "Aldric Stoneweave",
@@ -87,7 +115,13 @@ const factionUsers = {
     ],
   },
   water: {
-    main: { name: "Dirge Gladstone", role: "Breaker — Winter Wall Detail" },
+    main: {
+      name: "Dirge Gladstone",
+      role: "Breaker — Winter Wall Detail",
+      joinDate: "Year 9 of the Current Cycle",
+      bio: "Low-ranked but always present. First witness to The First's message. Faces the Veil every shift so the rest of the island sleeps easy.",
+      avatarEmoji: "🌊",
+    },
     chatUsers: [
       "Lorinn Deepwatch",
       "Corvatz",
@@ -117,7 +151,13 @@ const factionUsers = {
     ],
   },
   wood: {
-    main: { name: "Tori", role: "Steward — Terrace Farmer, Eastern Slopes" },
+    main: {
+      name: "Tori",
+      role: "Steward — Terrace Farmer, Eastern Slopes",
+      joinDate: "Year 6 of the Current Cycle",
+      bio: "Experienced terrace farmer on the eastern slopes. Manages flood channels under pressure. Decisive, natural leader. The quota holds because we make it hold.",
+      avatarEmoji: "🌿",
+    },
     chatUsers: [
       "Brenn Rootfield",
       "Marda Greenshade",
@@ -150,7 +190,13 @@ const factionUsers = {
     ],
   },
   metal: {
-    main: { name: "Ani Vildor", role: "Artificer — Obelisk Researcher, The Gardens" },
+    main: {
+      name: "Ani Vildor",
+      role: "Artificer — Obelisk Researcher, The Gardens",
+      joinDate: "Year 14 of the Current Cycle",
+      bio: "Graduate student researching the Obelisk — the fringe topic everyone else abandoned. Bookish, curious, not excited about fieldwork. The vindicated researcher when The First's message arrived.",
+      avatarEmoji: "⚗️",
+    },
     chatUsers: [
       "Solen Brightlens",
       "Dr. Caro",
@@ -431,7 +477,7 @@ async function seed() {
   try {
     await client.query("BEGIN");
 
-    // ── 0. Ensure chronicle_posts table exists ────────────────────────────────
+    // ── 0. Ensure tables and columns exist ──────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS chronicle_posts (
         id SERIAL PRIMARY KEY,
@@ -441,7 +487,24 @@ async function seed() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    console.log("  ✓ chronicle_posts table ensured");
+
+    // Add profile columns to users table
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS join_date TEXT`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_emoji TEXT`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_main BOOLEAN DEFAULT false`);
+
+    // Create user_friends table for friend relationships
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_friends (
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        friend_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        PRIMARY KEY (user_id, friend_id)
+      )
+    `);
+
+    console.log("  ✓ schema migrations applied (chronicle_posts, user columns, user_friends)");
 
     // ── 1. Update faction standings ──────────────────────────────────────────
     console.log("\n[1/7] Updating faction standings...");
@@ -455,21 +518,25 @@ async function seed() {
 
     // ── 2. Clear and re-seed users ──────────────────────────────────────────
     console.log("\n[2/7] Seeding users and citizens...");
+    await client.query("DELETE FROM user_friends");
     await client.query("DELETE FROM portfolio_allocations");
     await client.query("DELETE FROM champions");
     await client.query("DELETE FROM users");
 
     const allUsers = [];
     let userCounter = {};
+    const mainUserIds = {};
 
     for (const [factionId, data] of Object.entries(factionUsers)) {
       userCounter[factionId] = 0;
       const seenNames = new Set();
+      const fEmoji = factionEmojis[factionId];
 
       // Main character
       const mainIdx = String(++userCounter[factionId]).padStart(2, "0");
       const mainId = `${factionId}_${mainIdx}`;
       const mainBalance = 25000 + Math.random() * 20000;
+      mainUserIds[factionId] = mainId;
       allUsers.push({
         id: mainId,
         name: data.main.name,
@@ -478,6 +545,11 @@ async function seed() {
         starting_balance: Math.round(mainBalance * 100) / 100,
         standing: factionStandings[factionId],
         is_champion: false,
+        is_main: true,
+        role: data.main.role,
+        join_date: data.main.joinDate,
+        bio: data.main.bio,
+        avatar_emoji: data.main.avatarEmoji,
       });
       seenNames.add(data.main.name.toLowerCase());
 
@@ -496,6 +568,8 @@ async function seed() {
           starting_balance: Math.round(bal * 100) / 100,
           standing: Math.round((40 + Math.random() * 50) * 100) / 100,
           is_champion: false,
+          is_main: false,
+          avatar_emoji: fEmoji,
         });
       }
 
@@ -505,7 +579,6 @@ async function seed() {
         seenNames.add(champ.name.toLowerCase());
         const idx = String(++userCounter[factionId]).padStart(2, "0");
         const uid = `${factionId}_${idx}`;
-        // Balance derived from returnRate: base 15000, returnRate scales ±10000
         const champBalance = 15000 + champ.returnRate * 1000000;
         allUsers.push({
           id: uid,
@@ -515,7 +588,9 @@ async function seed() {
           starting_balance: Math.round(Math.max(1000, champBalance) * 100) / 100,
           standing: champ.stabilityScore,
           is_champion: true,
+          is_main: false,
           starting_return_rate: champ.startingReturnRate,
+          avatar_emoji: fEmoji,
         });
       }
     }
@@ -523,8 +598,8 @@ async function seed() {
     // Insert users
     for (const u of allUsers) {
       await client.query(
-        "INSERT INTO users (id, name, faction_id, balance, starting_balance, standing, is_champion, starting_return_rate) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-        [u.id, u.name, u.faction_id, u.balance, u.starting_balance, u.standing, u.is_champion, u.starting_return_rate ?? null]
+        "INSERT INTO users (id, name, faction_id, balance, starting_balance, standing, is_champion, starting_return_rate, is_main, role, join_date, bio, avatar_emoji) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+        [u.id, u.name, u.faction_id, u.balance, u.starting_balance, u.standing, u.is_champion, u.starting_return_rate ?? null, u.is_main ?? false, u.role ?? null, u.join_date ?? null, u.bio ?? null, u.avatar_emoji ?? null]
       );
     }
 
@@ -536,12 +611,35 @@ async function seed() {
       );
     }
 
+    // Seed friend relationships
+    const nameToId = {};
+    for (const u of allUsers) {
+      const key = `${u.faction_id}:${u.name.toLowerCase()}`;
+      nameToId[key] = u.id;
+    }
+
+    let friendCount = 0;
+    for (const [factionId, friendNames] of Object.entries(friendUsersByFaction)) {
+      const mainId = mainUserIds[factionId];
+      for (const friendName of friendNames) {
+        const friendId = nameToId[`${factionId}:${friendName.toLowerCase()}`];
+        if (mainId && friendId) {
+          await client.query(
+            "INSERT INTO user_friends (user_id, friend_id) VALUES ($1, $2)",
+            [mainId, friendId]
+          );
+          friendCount++;
+        }
+      }
+    }
+
     const factionCounts = {};
     allUsers.forEach((u) => {
       factionCounts[u.faction_id] = (factionCounts[u.faction_id] || 0) + 1;
     });
     console.log(`  ✓ Inserted ${allUsers.length} users and citizens`);
     console.log("    Per faction:", JSON.stringify(factionCounts));
+    console.log(`  ✓ Inserted ${friendCount} friend relationships`);
 
     // ── 3. Rebuild portfolio allocations ─────────────────────────────────────
     console.log("\n[3/7] Generating portfolio allocations...");

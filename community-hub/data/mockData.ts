@@ -165,9 +165,3 @@ export const tools: Tool[] = [
   },
 ];
 
-export const userProfile = {
-  name: "Hakan",
-  role: "Thermtech — Generator 4",
-  joinDate: "Year 12 of the Current Cycle",
-  bio: "Assigned to Generator 4 in the Deeps. Loves the machines, takes double shifts without complaint. Nothing works without us.",
-};

@@ -17,6 +17,14 @@ export async function GET(
     return NextResponse.json({ error: "Invalid faction id" }, { status: 400 });
   }
 
+  if (!process.env.DATABASE_URL) {
+    console.error("DATABASE_URL is not set. Ensure .env.local exists in community-hub and Next.js is run from that directory (or set turbopack.root).");
+    return NextResponse.json(
+      { error: "Database not configured", detail: "DATABASE_URL is missing" },
+      { status: 500 }
+    );
+  }
+
   try {
     const client = await pool.connect();
 
@@ -28,11 +36,17 @@ export async function GET(
       );
       const standing = (factionRes.rows[0] as DbRow | undefined)?.standing ?? null;
 
-      // 2. Main user (first non-champion user for this faction)
-      const mainUserRes = await client.query(
-        "SELECT id, name, faction_id, balance, starting_balance, standing FROM users WHERE faction_id = $1 AND (is_champion = false OR is_champion IS NULL) ORDER BY id ASC LIMIT 1",
+      // 2. Main user (prefer is_main flag, fallback to first non-champion)
+      let mainUserRes = await client.query(
+        "SELECT id, name, faction_id, balance, starting_balance, standing, role, join_date, bio, avatar_emoji FROM users WHERE faction_id = $1 AND is_main = true LIMIT 1",
         [factionId]
       );
+      if (mainUserRes.rows.length === 0) {
+        mainUserRes = await client.query(
+          "SELECT id, name, faction_id, balance, starting_balance, standing, role, join_date, bio, avatar_emoji FROM users WHERE faction_id = $1 AND (is_champion = false OR is_champion IS NULL) ORDER BY id ASC LIMIT 1",
+          [factionId]
+        );
+      }
       const mainUser = (mainUserRes.rows[0] as DbRow | undefined) ?? null;
 
       // 3. Champions (from dedicated champions table)
@@ -50,7 +64,7 @@ export async function GET(
 
       // 4. All users (non-champion, for chat etc.)
       const usersRes = await client.query(
-        "SELECT id, name, balance, starting_balance, standing FROM users WHERE faction_id = $1 AND (is_champion = false OR is_champion IS NULL) ORDER BY id ASC",
+        "SELECT id, name, balance, starting_balance, standing, avatar_emoji FROM users WHERE faction_id = $1 AND (is_champion = false OR is_champion IS NULL) ORDER BY id ASC",
         [factionId]
       );
       const users = usersRes.rows.map((row: DbRow) => ({
@@ -59,7 +73,18 @@ export async function GET(
         balance: row.balance as number,
         startingBalance: row.starting_balance as number,
         standing: row.standing as number,
+        avatarEmoji: (row.avatar_emoji as string | null) ?? null,
       }));
+
+      // 4b. Friend relationships for the main user
+      let friendUserIds: string[] = [];
+      if (mainUser) {
+        const friendsRes = await client.query(
+          "SELECT friend_id FROM user_friends WHERE user_id = $1",
+          [mainUser.id as string]
+        );
+        friendUserIds = friendsRes.rows.map((row: DbRow) => row.friend_id as string);
+      }
 
       // 5. Infrastructure - facility sections
       const facilitySectionsRes = await client.query(
@@ -142,6 +167,7 @@ export async function GET(
         mainUser,
         champions,
         users,
+        friendUserIds,
         facilitySections,
         gridNodes,
         gridEdges,
@@ -153,9 +179,15 @@ export async function GET(
       client.release();
     }
   } catch (error) {
-    console.error("Database query error:", error);
+    const err = error as NodeJS.ErrnoException & { message?: string };
+    console.error("Database query error:", err);
+    const message = err?.message ?? String(err);
+    const code = err?.code ?? "";
     return NextResponse.json(
-      { error: "Failed to fetch faction data" },
+      {
+        error: "Failed to fetch faction data",
+        ...(process.env.NODE_ENV === "development" && { detail: message, code }),
+      },
       { status: 500 }
     );
   }
