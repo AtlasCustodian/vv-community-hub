@@ -25,6 +25,14 @@ interface FactionContextValue {
   faction: FactionData;
   setFactionId: (id: FactionId) => void;
   isLoading: boolean;
+  /**
+   * Apply one tick of simulation to the current faction data.
+   * Updates champion return rates (scaled by instability) and
+   * facility section health (based on assigned champions' return rates).
+   *
+   * @param assignments — map of sectionId → championId[] from ChampionAssignmentContext
+   */
+  advanceTickUpdate: (assignments: Record<string, string[]>) => void;
 }
 
 const FactionContext = createContext<FactionContextValue | null>(null);
@@ -100,6 +108,13 @@ function mergeApiData(config: FactionConfig, api: any): FactionData {
       const template = config.sectionTemplates[section.id];
       const visuals = template?.visuals ?? { icon: "🔧", color: config.theme.primary };
 
+      // Convert DB ID (e.g. "fire_boiler_core") → static ID ("boiler-core").
+      // DB convention is {factionId}_{name_with_underscores}; views and
+      // champion-assignment storage use {name-with-hyphens}.
+      const staticId = section.id
+        .replace(new RegExp(`^${config.id}_`), "")
+        .replace(/_/g, "-");
+
       // Map stats from DB using stat templates for labels/descriptions
       let stats: FacilityStat[] = [];
       if (template?.statTemplates && section.stats) {
@@ -118,7 +133,7 @@ function mergeApiData(config: FactionConfig, api: any): FactionData {
       }
 
       return {
-        id: section.id,
+        id: staticId,
         name: section.name,
         description: section.description,
         health: section.health,
@@ -276,8 +291,100 @@ export function FactionProvider({ children }: { children: ReactNode }) {
     setFactionIdState(id);
   };
 
+  /**
+   * Atomically update champions and facility sections for one tick.
+   *
+   * Champion return-rate change:
+   *   - Max absolute delta is 0.001.
+   *   - Lower stability → larger expected change (instabilityFactor uses a
+   *     gentle curve with a 0.3 floor so even stable champions see movement).
+   *   - ~10–20 % chance of no change (higher for stable champions).
+   *
+   * Facility section health:
+   *   - Unassigned hardware decays 0.1–0.5 per tick.
+   *   - Assigned hardware improves, degrades, or stays flat depending on
+   *     the average return rate of the champions stationed there.
+   */
+  const advanceTickUpdate = useCallback(
+    (assignments: Record<string, string[]>) => {
+      setFaction((prev) => {
+        // 1. Update champion return rates
+        const updatedChampions = prev.champions.map((champion) => {
+          // Gentle curve: even stability-98 champions get a floor of 0.3,
+          // while stability-65 champions reach ~1.0.
+          const raw = (100 - champion.stabilityScore) / 50;
+          const instabilityFactor = Math.min(1, Math.max(0.3, raw));
+          const MAX_DELTA = 0.001;
+
+          // Higher stability ⇒ slightly higher chance of no change
+          const noChangeChance = 0.1 + 0.1 * (1 - instabilityFactor);
+          if (Math.random() < noChangeChance) {
+            return champion; // no change this tick
+          }
+
+          const delta =
+            (Math.random() * 2 - 1) * MAX_DELTA * instabilityFactor;
+
+          return {
+            ...champion,
+            returnRate: champion.returnRate + delta,
+          };
+        });
+
+        // 2. Update facility section health
+        const updatedSections = prev.facilitySections.map((section) => {
+          const assignedIds = assignments[section.id] ?? [];
+          let healthDelta: number;
+
+          if (assignedIds.length === 0) {
+            // No champions → slight decay
+            healthDelta = -(Math.random() * 0.4 + 0.1);
+          } else {
+            // Compute average return rate of assigned champions
+            const assigned = assignedIds
+              .map((id) => updatedChampions.find((c) => c.id === id))
+              .filter(Boolean) as typeof updatedChampions;
+
+            const avgRate =
+              assigned.length > 0
+                ? assigned.reduce((sum, c) => sum + c.returnRate, 0) /
+                  assigned.length
+                : 0;
+
+            if (avgRate > 0.001) {
+              healthDelta = Math.random() * 0.3 + 0.05; // positive
+            } else if (avgRate < -0.001) {
+              healthDelta = -(Math.random() * 0.3 + 0.05); // negative
+            } else {
+              healthDelta = (Math.random() - 0.5) * 0.15; // roughly neutral
+            }
+          }
+
+          const newHealth = Math.min(
+            100,
+            Math.max(0, section.health + healthDelta),
+          );
+
+          return {
+            ...section,
+            health: Math.round(newHealth * 10) / 10,
+          };
+        });
+
+        return {
+          ...prev,
+          champions: updatedChampions,
+          facilitySections: updatedSections,
+        };
+      });
+    },
+    [],
+  );
+
   return (
-    <FactionContext.Provider value={{ factionId, faction, setFactionId, isLoading }}>
+    <FactionContext.Provider
+      value={{ factionId, faction, setFactionId, isLoading, advanceTickUpdate }}
+    >
       {children}
     </FactionContext.Provider>
   );

@@ -622,6 +622,14 @@ export default function GeneratorView() {
   const { faction, factionId } = useFaction();
   const { getAssigned } = useChampionAssignment();
 
+  // Merge dynamic health from faction context into the static generator sections
+  // so tick-based updates are reflected in the UI
+  const sections = generatorSections.map((section) => {
+    const dynamic = faction.facilitySections.find((s) => s.id === section.id);
+    if (!dynamic) return section;
+    return { ...section, health: dynamic.health };
+  });
+
   const getAssignedNames = (sectionId: string): string[] => {
     const ids = getAssigned(factionId, sectionId);
     return ids
@@ -630,7 +638,7 @@ export default function GeneratorView() {
   };
 
   const modalData = modalSection
-    ? generatorSections.find((s) => s.id === modalSection)
+    ? sections.find((s) => s.id === modalSection)
     : null;
 
   return (
@@ -639,7 +647,7 @@ export default function GeneratorView() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left panels */}
         <div className="flex flex-col gap-4 lg:col-span-3">
-          {generatorSections.slice(0, 4).map((section) => (
+          {sections.slice(0, 4).map((section) => (
             <SectionPanel
               key={section.id}
               section={section}
@@ -663,7 +671,7 @@ export default function GeneratorView() {
 
         {/* Right panels */}
         <div className="flex flex-col gap-4 lg:col-span-3">
-          {generatorSections.slice(4).map((section) => (
+          {sections.slice(4).map((section) => (
             <SectionPanel
               key={section.id}
               section={section}
@@ -681,7 +689,7 @@ export default function GeneratorView() {
       {activeSection && (
         <div className="mt-6 rounded-2xl border border-border bg-surface/50 p-6 text-center lg:hidden">
           <p className="text-sm text-muted">
-            {generatorSections.find((s) => s.id === activeSection)?.description}
+            {sections.find((s) => s.id === activeSection)?.description}
           </p>
         </div>
       )}

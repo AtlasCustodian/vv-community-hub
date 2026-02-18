@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useFaction } from "@/context/FactionContext";
+import { useTick } from "@/context/TickContext";
 import { GridNode } from "@/data/factionData";
-import NodeChat from "@/components/NodeChat";
+import NodeChat, { generateTickMessages, type ChatMessage } from "@/components/NodeChat";
 
 function getConnectionColor(health: number): string {
   if (health >= 75) return "#10b981";
@@ -90,6 +91,21 @@ export default function FactionGridMap() {
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const { tick } = useTick();
+  const prevTickRef = useRef(tick);
+  const [tickMessages, setTickMessages] = useState<ChatMessage[]>([]);
+
+  // Generate chat messages every tick, regardless of chat panel visibility
+  useEffect(() => {
+    if (tick === prevTickRef.current) return;
+    prevTickRef.current = tick;
+
+    const nodeName = selectedNode
+      ? faction.gridNodes.find((n) => n.id === selectedNode)?.name
+      : undefined;
+    const newMessages = generateTickMessages(tick, factionId, nodeName);
+    setTickMessages((prev) => [...prev, ...newMessages]);
+  }, [tick, factionId, selectedNode, faction.gridNodes]);
 
   const nodeMap = new Map(faction.gridNodes.map((n) => [n.id, n]));
   const activeNodeData = activeNode ? nodeMap.get(activeNode) : null;
@@ -98,9 +114,16 @@ export default function FactionGridMap() {
   const handleNodeClick = (nodeId: string) => {
     setSelectedNode(nodeId);
     setActiveNode(null);
-    setTimeout(() => {
-      chatRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+
+    // Wait for React to fully commit the re-render (NodeChat remounts via key
+    // change) before measuring and scrolling. A double-rAF ensures the browser
+    // has painted the updated layout.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!chatRef.current) return;
+        chatRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   };
 
   const handleReturn = () => {
@@ -123,6 +146,20 @@ export default function FactionGridMap() {
           <div className="h-2 w-8 rounded-full bg-[#dc2626]" />
           <span className="text-xs text-muted">Critical (&lt;50%)</span>
         </div>
+      </div>
+
+      {/* Chat Panel (always visible, above grid) */}
+      <div ref={chatRef} className="mb-6" style={{ scrollMarginTop: "88px" }}>
+        <NodeChat
+          key={selectedNode ?? "world"}
+          node={selectedNodeData ?? undefined}
+          factionId={factionId}
+          factionName={faction.name}
+          factionEmoji={faction.emoji}
+          theme={faction.theme}
+          onReturn={selectedNode ? handleReturn : undefined}
+          tickMessages={tickMessages}
+        />
       </div>
 
       {/* Map container */}
@@ -343,23 +380,8 @@ export default function FactionGridMap() {
         </div>
       </div>
 
-      {/* Chat Panel (replaces roster when a node is selected) */}
-      {selectedNodeData ? (
-        <div ref={chatRef} className="mt-8">
-          <NodeChat
-            key={selectedNode}
-            node={selectedNodeData}
-            factionId={factionId}
-            factionName={faction.name}
-            factionEmoji={faction.emoji}
-            theme={faction.theme}
-            onReturn={handleReturn}
-          />
-        </div>
-      ) : (
-        <>
-          {/* Roster table */}
-          <div className="mt-8">
+      {/* Roster table */}
+      <div className="mt-8">
             <h3 className="mb-4 text-lg font-bold">{faction.name} Assignment Roster</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {faction.gridNodes.map((node) => {
@@ -453,8 +475,6 @@ export default function FactionGridMap() {
               </div>
             </div>
           </div>
-        </>
-      )}
     </div>
   );
 }

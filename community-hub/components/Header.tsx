@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useFaction } from "@/context/FactionContext";
+import { useTick } from "@/context/TickContext";
 import { factionIds, factions } from "@/data/factionData";
 
 export default function Header() {
@@ -12,6 +13,7 @@ export default function Header() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { factionId, faction, setFactionId } = useFaction();
+  const { tick, advanceTick } = useTick();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -147,11 +149,24 @@ export default function Header() {
 
         {/* Right side */}
         <div className="flex items-center gap-3">
-          <button className="hidden sm:flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-muted transition-colors hover:border-accent-primary/30 hover:text-foreground">
+          <button
+            onClick={advanceTick}
+            className="hidden sm:flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium transition-all duration-200 hover:border-accent-primary/50 hover:bg-surface-hover hover:text-foreground active:scale-[0.97]"
+            style={{ color: faction.theme.primary }}
+          >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Search
+            Next Tick
+            <span
+              className="rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums"
+              style={{
+                background: `${faction.theme.primary}15`,
+                color: faction.theme.primary,
+              }}
+            >
+              {tick}
+            </span>
           </button>
 
           <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface transition-colors hover:border-accent-primary/30">

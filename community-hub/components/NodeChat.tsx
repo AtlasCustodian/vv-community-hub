@@ -7,7 +7,7 @@ import { FactionId, GridNode } from "@/data/factionData";
 
 type MessageFilter = "world" | "faction" | "node" | "friends";
 
-interface ChatMessage {
+export interface ChatMessage {
   id: string;
   username: string;
   factionId: FactionId;
@@ -18,12 +18,13 @@ interface ChatMessage {
 }
 
 interface NodeChatProps {
-  node: GridNode;
+  node?: GridNode;
   factionId: FactionId;
   factionName: string;
   factionEmoji: string;
   theme: { primary: string; secondary: string; gradientFrom: string; gradientTo: string };
-  onReturn: () => void;
+  onReturn?: () => void;
+  tickMessages?: ChatMessage[];
 }
 
 // ─── Fake User Data ─────────────────────────────────────────────────────────
@@ -342,7 +343,7 @@ const nodeMessageTemplates: Record<FactionId, string[]> = {
 
 function generateMessages(
   factionId: FactionId,
-  nodeName: string,
+  nodeName?: string,
 ): ChatMessage[] {
   const msgs: ChatMessage[] = [];
   const allFactionIds: FactionId[] = ["fire", "earth", "water", "wood", "metal"];
@@ -406,7 +407,8 @@ function generateMessages(
     minutesAgo += Math.floor(Math.random() * 8) + 5;
   }
 
-  // Node-specific messages
+  // Node-specific messages (only when a node is specified)
+  if (!nodeName) return msgs;
   const nTemplates = nodeMessageTemplates[factionId];
   const nodeSpecificMsgs = nTemplates.map((t) =>
     t.replace(/\{NODE\}/g, nodeName),
@@ -431,6 +433,89 @@ function generateMessages(
   return msgs;
 }
 
+// ─── Tick Message Generator (exported for parent components) ────────────────
+
+export function generateTickMessages(
+  tick: number,
+  factionId: FactionId,
+  nodeName?: string,
+): ChatMessage[] {
+  const newMessages: ChatMessage[] = [];
+  const allFactionIds: FactionId[] = ["fire", "earth", "water", "wood", "metal"];
+
+  // World message
+  const wMsgs = worldMessages[factionId];
+  const wMsg = wMsgs[Math.floor(Math.random() * wMsgs.length)];
+  const srcFaction = allFactionIds[Math.floor(Math.random() * allFactionIds.length)];
+  const srcUsers = factionUsers[srcFaction];
+  const srcUser = srcUsers[Math.floor(Math.random() * srcUsers.length)];
+  newMessages.push({
+    id: `tick-w-${tick}`,
+    username: srcUser.name,
+    factionId: srcFaction,
+    factionEmoji: srcUser.emoji,
+    content: wMsg,
+    timestamp: generateTimestamp(0),
+    type: "world",
+  });
+
+  // Faction message
+  const fMsgs = factionMessages[factionId];
+  const fMsg = fMsgs[Math.floor(Math.random() * fMsgs.length)];
+  const fUsers = factionUsers[factionId];
+  const fUser = fUsers[Math.floor(Math.random() * fUsers.length)];
+  newMessages.push({
+    id: `tick-f-${tick}`,
+    username: fUser.name,
+    factionId: factionId,
+    factionEmoji: fUser.emoji,
+    content: fMsg,
+    timestamp: generateTimestamp(0),
+    type: "faction",
+  });
+
+  // Node message (60% chance, only if a node is specified)
+  if (nodeName && Math.random() > 0.4) {
+    const nTemplates = nodeMessageTemplates[factionId];
+    const nMsg = nTemplates[Math.floor(Math.random() * nTemplates.length)].replace(
+      /\{NODE\}/g,
+      nodeName,
+    );
+    const nUser = fUsers[Math.floor(Math.random() * fUsers.length)];
+    newMessages.push({
+      id: `tick-n-${tick}`,
+      username: nUser.name,
+      factionId: factionId,
+      factionEmoji: nUser.emoji,
+      content: nMsg,
+      timestamp: generateTimestamp(0),
+      type: "node",
+    });
+  }
+
+  // Friend message (50% chance)
+  if (Math.random() > 0.5) {
+    const frMsgs = friendMessages[factionId];
+    const frMsg = frMsgs[Math.floor(Math.random() * frMsgs.length)];
+    const friends = friendUsers[factionId];
+    const friendName = friends[Math.floor(Math.random() * friends.length)];
+    const friendUser = factionUsers[factionId].find(
+      (u) => u.name === friendName,
+    ) ?? { name: friendName, emoji: factionUsers[factionId][0].emoji };
+    newMessages.push({
+      id: `tick-fr-${tick}`,
+      username: friendUser.name,
+      factionId: factionId,
+      factionEmoji: friendUser.emoji,
+      content: frMsg,
+      timestamp: generateTimestamp(0),
+      type: "friends",
+    });
+  }
+
+  return newMessages;
+}
+
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function NodeChat({
@@ -440,17 +525,19 @@ export default function NodeChat({
   factionEmoji,
   theme,
   onReturn,
+  tickMessages = [],
 }: NodeChatProps) {
-  const [filter, setFilter] = useState<MessageFilter>("faction");
+  const isWorldMode = !node;
+  const [filter, setFilter] = useState<MessageFilter>(isWorldMode ? "world" : "node");
   const [inputValue, setInputValue] = useState("");
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Generate messages once on mount per node
-  const [messages] = useState(() => generateMessages(factionId, node.name));
+  // Generate seed messages once on mount
+  const [messages] = useState(() => generateMessages(factionId, node?.name));
 
-  const filteredMessages = [...messages, ...localMessages]
+  const filteredMessages = [...messages, ...tickMessages, ...localMessages]
     .filter((m) => filter === "world" ? true : m.type === filter)
     .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
@@ -480,7 +567,7 @@ export default function NodeChat({
   const filters: { key: MessageFilter; label: string; icon: string }[] = [
     { key: "world", label: "All World", icon: "🌍" },
     { key: "faction", label: `${factionName}`, icon: factionEmoji },
-    { key: "node", label: nodeChatLabel, icon: nodeEmoji },
+    ...(node ? [{ key: "node" as MessageFilter, label: nodeChatLabel, icon: nodeEmoji }] : []),
     { key: "friends", label: "Friends", icon: "👥" },
   ];
 
@@ -498,7 +585,7 @@ export default function NodeChat({
             </div>
             <div>
               <h3 className="text-sm font-bold">
-                {node.name}{" "}
+                {node ? node.name : "World"}{" "}
                 <span className="font-normal text-muted">— Channel</span>
               </h3>
               <div className="flex items-center gap-1.5">
@@ -507,41 +594,44 @@ export default function NodeChat({
                   style={{ background: theme.primary }}
                 />
                 <span className="text-[10px] text-muted">
-                  {node.assignedUsers} members online
+                  {node ? `${node.assignedUsers} members online` : "All factions online"}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Return Button */}
-          <button
-            onClick={onReturn}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-all duration-200 hover:border-accent-primary hover:text-foreground hover:bg-surface-hover"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {/* Return Button (only when viewing a node) */}
+          {node && onReturn && (
+            <button
+              onClick={onReturn}
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-all duration-200 hover:border-accent-primary hover:text-foreground hover:bg-surface-hover"
             >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Return
-          </button>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              Return
+            </button>
+          )}
         </div>
 
         {/* Filter Tabs */}
         <div className="flex gap-1 px-4 py-2.5 border-b border-border bg-background/30">
           {filters.map((f) => {
             const isActive = filter === f.key;
+            const allMsgs = [...messages, ...tickMessages, ...localMessages];
             const count =
               f.key === "world"
-                ? messages.length + localMessages.length
-                : [...messages, ...localMessages].filter(
+                ? allMsgs.length
+                : allMsgs.filter(
                     (m) => m.type === f.key,
                   ).length;
 
@@ -591,13 +681,13 @@ export default function NodeChat({
               💬
             </div>
             <p className="text-xs font-semibold">
-              {node.name} —{" "}
+              {node ? node.name : "World"} —{" "}
               {filter === "world"
                 ? "World Channel"
                 : filter === "faction"
                   ? `${factionName} Channel`
                   : filter === "node"
-                    ? `${node.name} Channel`
+                    ? `${node?.name ?? ""} Channel`
                     : "Friends Channel"}
             </p>
             <p className="mt-1 text-[10px] text-muted">
@@ -606,7 +696,7 @@ export default function NodeChat({
                 : filter === "faction"
                   ? `Private channel for ${factionName} faction members`
                   : filter === "node"
-                    ? `Messages specific to ${node.name} operations and crew`
+                    ? `Messages specific to ${node?.name ?? ""} operations and crew`
                     : "Messages from your friends list"}
             </p>
           </div>
@@ -679,7 +769,7 @@ export default function NodeChat({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder={`Message ${node.name} ${filter === "world" ? "world" : filter === "faction" ? factionName : filter === "node" ? node.name : "friends"} channel...`}
+              placeholder={`Message ${node ? node.name : "world"} ${filter === "world" ? "world" : filter === "faction" ? factionName : filter === "node" ? (node?.name ?? "") : "friends"} channel...`}
               className="flex-1 rounded-lg border border-border bg-background/60 px-3 py-2 text-xs text-foreground placeholder:text-muted/60 outline-none transition-colors duration-200 focus:border-accent-primary"
             />
             <button

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
+import ScrollToTop from "@/components/ScrollToTop";
+import { TickProvider } from "@/context/TickContext";
 import { FactionProvider } from "@/context/FactionContext";
 import { ChampionAssignmentProvider } from "@/context/ChampionAssignmentContext";
+import TickEffects from "@/components/TickEffects";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,12 +34,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
-        <FactionProvider>
-          <ChampionAssignmentProvider>
-            <Header />
-            <main>{children}</main>
-          </ChampionAssignmentProvider>
-        </FactionProvider>
+        <TickProvider>
+          <FactionProvider>
+            <ChampionAssignmentProvider>
+              <TickEffects />
+              <ScrollToTop />
+              <Header />
+              <main>{children}</main>
+            </ChampionAssignmentProvider>
+          </FactionProvider>
+        </TickProvider>
       </body>
     </html>
   );
