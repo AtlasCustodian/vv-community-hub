@@ -152,22 +152,6 @@ export default function FactionGridMap() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      {/* Legend */}
-      <div className="mb-6 flex flex-wrap items-center justify-center gap-6">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-8 rounded-full bg-[#10b981]" />
-          <span className="text-xs text-muted">Healthy (75%+)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-8 rounded-full bg-[#fbbf24]" />
-          <span className="text-xs text-muted">Moderate (50–74%)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-8 rounded-full bg-[#dc2626]" />
-          <span className="text-xs text-muted">Critical (&lt;50%)</span>
-        </div>
-      </div>
-
       {/* Side-by-side: Chat (left) + Map (right) */}
       <div ref={chatRef} className={`flex flex-col ${isChatExpanded ? "" : "lg:flex-row"} gap-6`} style={{ scrollMarginTop: "88px" }}>
 
