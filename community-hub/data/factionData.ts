@@ -85,6 +85,7 @@ export interface Champion {
   id: string;
   name: string;
   returnRate: number;
+  startingReturnRate: number;
   stabilityScore: number;
   currentAssignment: string;
 }
