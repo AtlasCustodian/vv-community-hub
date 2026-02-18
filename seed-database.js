@@ -444,8 +444,8 @@ async function seed() {
     // ── 2. Clear and re-seed users ──────────────────────────────────────────
     console.log("\n[2/7] Seeding users and citizens...");
     await client.query("DELETE FROM portfolio_allocations");
+    await client.query("DELETE FROM champions");
     await client.query("DELETE FROM users");
-    await client.query("DELETE FROM citizens");
 
     const allUsers = [];
     let userCounter = {};
@@ -516,11 +516,11 @@ async function seed() {
       );
     }
 
-    // Insert matching citizens
-    for (const u of allUsers) {
+    // Insert champions into dedicated champions table
+    for (const u of allUsers.filter((u) => u.is_champion)) {
       await client.query(
-        "INSERT INTO citizens (id, name, faction_id, starting_balance) VALUES ($1, $2, $3, $4)",
-        [u.id, u.name, u.faction_id, u.starting_balance]
+        "INSERT INTO champions (id, name, faction_id, balance, starting_balance, standing, starting_return_rate) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [u.id, u.name, u.faction_id, u.balance, u.starting_balance, u.standing, u.starting_return_rate ?? null]
       );
     }
 

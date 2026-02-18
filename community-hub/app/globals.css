@@ -314,3 +314,17 @@ button:focus-visible {
 .dropdown-enter {
   animation: dropdown-in 0.15s ease-out forwards;
 }
+
+/* Sidebar mobile slide-in */
+@keyframes sidebar-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.sidebar-slide-in {
+  animation: sidebar-slide-in 0.2s ease-out forwards;
+}

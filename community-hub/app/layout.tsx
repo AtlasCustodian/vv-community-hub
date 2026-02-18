@@ -40,7 +40,7 @@ export default function RootLayout({
               <TickEffects />
               <ScrollToTop />
               <Header />
-              <main>{children}</main>
+              <main className="md:ml-52 pt-14 md:pt-0">{children}</main>
             </ChampionAssignmentProvider>
           </FactionProvider>
         </TickProvider>
