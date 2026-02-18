@@ -98,6 +98,7 @@ function mergeApiData(config: FactionConfig, api: any): FactionData {
     id: c.id,
     name: c.name,
     returnRate: c.returnRate,
+    startingReturnRate: c.startingReturnRate ?? c.returnRate,
     stabilityScore: c.stabilityScore,
     currentAssignment: "Not Assigned",
   }));

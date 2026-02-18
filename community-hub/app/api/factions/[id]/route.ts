@@ -35,15 +35,16 @@ export async function GET(
       );
       const mainUser = (mainUserRes.rows[0] as DbRow | undefined) ?? null;
 
-      // 3. Champions
+      // 3. Champions (from dedicated champions table)
       const championsRes = await client.query(
-        "SELECT id, name, balance, starting_balance, standing FROM users WHERE faction_id = $1 AND is_champion = true ORDER BY id ASC",
+        "SELECT id, name, balance, starting_balance, standing, starting_return_rate FROM champions WHERE faction_id = $1 ORDER BY id ASC",
         [factionId]
       );
       const champions = championsRes.rows.map((row: DbRow) => ({
         id: row.id as string,
         name: row.name as string,
         returnRate: ((row.balance as number) - 15000) / 1000000,
+        startingReturnRate: (row.starting_return_rate as number | null) ?? ((row.starting_balance as number) - 15000) / 1000000,
         stabilityScore: row.standing as number,
       }));
 

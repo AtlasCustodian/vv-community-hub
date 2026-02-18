@@ -84,8 +84,8 @@ const fireConfig: FactionConfig = {
   },
   navItems: [
     { label: "Dashboard", href: "/" },
+    { label: "Faction HQ", href: "/grid-status" },
     { label: "Generators", href: "/generators" },
-    { label: "Grid Status", href: "/grid-status" },
     { label: "Protocols", href: "/protocols" },
   ],
   userProfileDefaults: {
@@ -123,7 +123,7 @@ const fireConfig: FactionConfig = {
   facilityPageTitle: "Generator Diagnostics",
   facilityPageSubtitle: "Interactive schematic of Generator 04 in the Deeps. Hover over any section to view real-time health data, statistics, and subsystem descriptions.",
   facilityLabel: "Generator 04 — Live Monitoring",
-  gridPageTitle: "Grid Status",
+  gridPageTitle: "Faction HQ",
   gridPageSubtitle: "Network map of all 13 lava-powered generators across the island. Hover over any generator to view its health, connections, and assigned Fire faction crew.",
   gridLabel: "Island-Wide Grid — Live",
   gridNodeEmoji: "⚙️",
@@ -131,7 +131,7 @@ const fireConfig: FactionConfig = {
   protocols: [
     { id: "dashboard", title: "Faction Dashboard", icon: "📊", category: "Core Systems", description: "Your personal command center within the Fire faction. At-a-glance view of your status, rank, and contributions.", details: ["View your current rank, power output contribution, and shift history", "Track personal stats including Heat Rating and Pressure metrics", "See your avatar and profile information", "Quick access to all faction tools and notifications"] },
     { id: "generators", title: "Generator Monitoring", icon: "⚙️", category: "Core Systems", description: "Real-time monitoring and diagnostics for lava-powered generators in the Deeps.", details: ["Interactive schematic view of generator internals", "Health bars and real-time statistics for every subsystem", "Track maintenance needs: lining integrity, blade wear, valve status", "Color-coded warnings when subsystems approach critical thresholds"] },
-    { id: "grid-status", title: "Grid Status Network", icon: "⚡", category: "Core Systems", description: "Live network map showing all 13 generators and their interconnections.", details: ["Visual network map with health indicators", "Connection lines color-coded by signal integrity", "Fire faction member assignments per generator", "Monitor overall grid stability and power distribution"] },
+    { id: "grid-status", title: "Faction HQ Network", icon: "⚡", category: "Core Systems", description: "Live network map showing all 13 generators and their interconnections.", details: ["Visual network map with health indicators", "Connection lines color-coded by signal integrity", "Fire faction member assignments per generator", "Monitor overall grid stability and power distribution"] },
     { id: "shift-scheduler", title: "Shift Scheduler", icon: "📋", category: "Operations", description: "Manage rotation schedules for all Deeps-level shifts.", details: ["View weekly and monthly rotation schedules", "Request shift swaps with other faction members", "Track coolant-suit availability", "Receive notifications for upcoming shifts"] },
     { id: "coolant-suits", title: "Coolant Suit Inventory", icon: "🧥", category: "Operations", description: "Track availability and maintenance of coolant suits for lava proximity work.", details: ["Real-time inventory by size and certification level", "Maintenance status tracking", "Schedule fittings and certifications", "Report suit malfunctions for replacement"] },
     { id: "pressure-logs", title: "Steam Pressure Logs", icon: "📈", category: "Monitoring", description: "Historical and live pressure readings across all turbine lines.", details: ["Live pressure readings from every turbine line", "Historical pressure graphs with trend analysis", "Automated alerts for deviations", "Export data for engineering reports"] },
@@ -189,8 +189,8 @@ const earthConfig: FactionConfig = {
   theme: { primary: "#c4a35a", secondary: "#a08040", gradientFrom: "#c4a35a", gradientTo: "#8b6914" },
   navItems: [
     { label: "Dashboard", href: "/" },
+    { label: "Faction HQ", href: "/grid-status" },
     { label: "The Roots", href: "/generators" },
-    { label: "Trade Network", href: "/grid-status" },
     { label: "Protocols", href: "/protocols" },
   ],
   userProfileDefaults: { role: "Master Artisan — The Roots Market", joinDate: "Year 8 of the Current Cycle", bio: "Master craftsman and guild coordinator in the Roots. Keeps the market thriving, the trades moving, and the culture alive. The island is more than survival — it's a society.", avatarEmoji: "🏛️" },
@@ -251,8 +251,8 @@ const waterConfig: FactionConfig = {
   theme: { primary: "#3b82f6", secondary: "#2563eb", gradientFrom: "#3b82f6", gradientTo: "#1d4ed8" },
   navItems: [
     { label: "Dashboard", href: "/" },
+    { label: "Faction HQ", href: "/grid-status" },
     { label: "Wall & Breakers", href: "/generators" },
-    { label: "Patrol Network", href: "/grid-status" },
     { label: "Protocols", href: "/protocols" },
   ],
   userProfileDefaults: { role: "Breaker — Winter Wall Detail", joinDate: "Year 9 of the Current Cycle", bio: "Low-ranked but always present. First witness to The First's message. Faces the Veil every shift so the rest of the island sleeps easy.", avatarEmoji: "🌊" },
@@ -313,8 +313,8 @@ const woodConfig: FactionConfig = {
   theme: { primary: "#22c55e", secondary: "#16a34a", gradientFrom: "#22c55e", gradientTo: "#15803d" },
   navItems: [
     { label: "Dashboard", href: "/" },
+    { label: "Faction HQ", href: "/grid-status" },
     { label: "Terraces", href: "/generators" },
-    { label: "Supply Network", href: "/grid-status" },
     { label: "Protocols", href: "/protocols" },
   ],
   userProfileDefaults: { role: "Steward — Terrace Farmer, Eastern Slopes", joinDate: "Year 6 of the Current Cycle", bio: "Experienced terrace farmer on the eastern slopes. Manages flood channels under pressure. Decisive, natural leader. The quota holds because we make it hold.", avatarEmoji: "🌿" },
@@ -375,8 +375,8 @@ const metalConfig: FactionConfig = {
   theme: { primary: "#94a3b8", secondary: "#64748b", gradientFrom: "#94a3b8", gradientTo: "#475569" },
   navItems: [
     { label: "Dashboard", href: "/" },
+    { label: "Faction HQ", href: "/grid-status" },
     { label: "The Relay Network", href: "/generators" },
-    { label: "Terminal Network", href: "/grid-status" },
     { label: "Protocols", href: "/protocols" },
   ],
   userProfileDefaults: { role: "Artificer — Obelisk Researcher, The Gardens", joinDate: "Year 14 of the Current Cycle", bio: "Graduate student researching the Obelisk — the fringe topic everyone else abandoned. Bookish, curious, not excited about fieldwork. The vindicated researcher when The First's message arrived.", avatarEmoji: "⚗️" },

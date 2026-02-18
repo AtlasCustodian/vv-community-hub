@@ -47,7 +47,7 @@ export const protocols: Protocol[] = [
   },
   {
     id: "grid-status",
-    title: "Grid Status Network",
+    title: "Faction HQ Network",
     icon: "⚡",
     category: "Core Systems",
     description:
