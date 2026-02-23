@@ -6,8 +6,12 @@
     "dev": "npm run dev --prefix community-hub",
     "build": "npm run build --prefix community-hub",
     "start": "npm run start --prefix community-hub",
+    "dev:battler": "npm run dev --prefix card-battler",
+    "build:battler": "npm run build --prefix card-battler",
+    "start:battler": "npm run start --prefix card-battler",
     "install:hub": "npm install --prefix community-hub",
-    "postinstall": "npm install --prefix community-hub"
+    "install:battler": "npm install --prefix card-battler",
+    "postinstall": "npm install --prefix community-hub && npm install --prefix card-battler"
   },
   "dependencies": {
     "pg": "^8.18.0"
