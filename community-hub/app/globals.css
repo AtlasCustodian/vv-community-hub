@@ -328,3 +328,257 @@ button:focus-visible {
 .sidebar-slide-in {
   animation: sidebar-slide-in 0.2s ease-out forwards;
 }
+
+/* ─── Champion Arena (Card Battler) ─────────────────────────────────────── */
+
+.champion-arena {
+  --bg-deep: var(--color-background);
+  --bg-surface: var(--color-surface);
+  --bg-elevated: var(--color-surface-hover);
+  --border-dim: color-mix(in srgb, var(--color-accent-primary) 12%, transparent);
+  --border-glow: color-mix(in srgb, var(--color-accent-primary) 25%, transparent);
+  --text-primary: var(--color-foreground);
+  --text-muted: var(--color-muted);
+  --scanline-opacity: 0.03;
+  --holo-shimmer: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* Holographic shimmer animation */
+@keyframes holoShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes holoPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@keyframes holoFlicker {
+  0%, 96%, 100% { opacity: 1; }
+  97% { opacity: 0.8; }
+  98% { opacity: 0.95; }
+  99% { opacity: 0.85; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px var(--glow-color, rgba(100, 160, 255, 0.3)); }
+  50% { box-shadow: 0 0 20px var(--glow-color, rgba(100, 160, 255, 0.5)); }
+}
+
+@keyframes gameSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gameFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardReveal {
+  from { opacity: 0; transform: scale(0.9) rotateY(10deg); }
+  to { opacity: 1; transform: scale(1) rotateY(0deg); }
+}
+
+.champion-arena .animate-fade-in {
+  animation: gameFadeIn 0.4s ease-out forwards;
+}
+
+.champion-arena .animate-slide-up {
+  animation: gameSlideUp 0.5s ease-out forwards;
+}
+
+.champion-arena .animate-card-reveal {
+  animation: cardReveal 0.5s ease-out forwards;
+}
+
+.champion-arena .holo-shimmer {
+  background: var(--holo-shimmer);
+  background-size: 200% 100%;
+  animation: holoShimmer 3s ease-in-out infinite;
+}
+
+.champion-arena .holo-flicker {
+  animation: holoFlicker 4s ease-in-out infinite;
+}
+
+.champion-arena .glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* Card styles */
+.champion-arena .card-container {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
+    color-mix(in srgb, var(--bg-surface) 98%, transparent) 100%
+  );
+  border: 1.5px solid var(--border-dim);
+  transition: all 0.25s ease;
+}
+
+.champion-arena .card-container:hover {
+  border-color: var(--accent-color, var(--border-glow));
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 0 12px var(--glow-color, rgba(100, 160, 255, 0.2));
+}
+
+.champion-arena .card-container.selected {
+  border-width: 2px;
+  transform: translateY(-6px) scale(1.03);
+}
+
+/* Corner ornaments */
+.champion-arena .card-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.champion-arena .card-corner-tl {
+  top: 5px;
+  left: 5px;
+  border-top: 1.5px solid;
+  border-left: 1.5px solid;
+  border-top-left-radius: 3px;
+}
+
+.champion-arena .card-corner-tr {
+  top: 5px;
+  right: 5px;
+  border-top: 1.5px solid;
+  border-right: 1.5px solid;
+  border-top-right-radius: 3px;
+}
+
+.champion-arena .card-corner-bl {
+  bottom: 5px;
+  left: 5px;
+  border-bottom: 1.5px solid;
+  border-left: 1.5px solid;
+  border-bottom-left-radius: 3px;
+}
+
+.champion-arena .card-corner-br {
+  bottom: 5px;
+  right: 5px;
+  border-bottom: 1.5px solid;
+  border-right: 1.5px solid;
+  border-bottom-right-radius: 3px;
+}
+
+/* Hex tile styles */
+.champion-arena .hex-tile {
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.champion-arena .hex-tile:hover polygon {
+  stroke-width: 2;
+}
+
+.champion-arena .hex-tile.valid-target polygon {
+  stroke-dasharray: 4 2;
+  animation: glowPulse 1.5s ease-in-out infinite;
+}
+
+/* Champion token on board */
+.champion-arena .champion-token {
+  animation: holoPulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px var(--token-color, rgba(100, 160, 255, 0.5)));
+}
+
+/* Board grid background */
+.champion-arena .board-bg {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--color-accent-primary) 8%, var(--color-background)) 0%,
+    var(--bg-deep) 70%
+  );
+}
+
+/* Player area glass effect */
+.champion-arena .player-panel {
+  background: color-mix(in srgb, var(--bg-surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+}
+
+/* Score display */
+.champion-arena .score-display {
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 12px currentColor;
+}
+
+/* Button styles */
+.champion-arena .btn-holo {
+  position: relative;
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--border-glow);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.champion-arena .btn-holo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--holo-shimmer);
+  background-size: 200% 100%;
+  animation: holoShimmer 3s ease-in-out infinite;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.champion-arena .btn-holo:hover {
+  border-color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.champion-arena .btn-holo:hover::before {
+  opacity: 1;
+}
+
+.champion-arena .btn-holo:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.champion-arena .btn-holo:disabled:hover::before {
+  opacity: 0;
+}
+
+/* Interstitial overlay */
+.champion-arena .interstitial-overlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-background) 95%, transparent);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
