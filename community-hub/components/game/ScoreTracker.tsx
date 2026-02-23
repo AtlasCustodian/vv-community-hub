@@ -43,7 +43,7 @@ export default function ScoreTracker({
               <p className="score-display text-lg font-mono font-bold" style={{ color: theme.primary }}>
                 {player.score}
                 <span className="text-[10px] text-[var(--text-muted)] ml-1">
-                  / 50
+                  / 75
                 </span>
               </p>
               {projected !== undefined && projected > 0 && (

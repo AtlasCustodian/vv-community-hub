@@ -29,7 +29,7 @@ export default function RulesOverlay({ onClose }: RulesOverlayProps) {
             </h2>
             <p>
               Three factions battle for control of a hex grid. The first player
-              to reach <span className="font-bold">50 points</span> wins. If all
+              to reach <span className="font-bold">75 points</span> wins. If all
               of a player&apos;s champions are destroyed with none left to deploy, they
               are eliminated. The last player standing also wins.
             </p>

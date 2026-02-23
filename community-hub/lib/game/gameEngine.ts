@@ -839,7 +839,7 @@ function checkElimination(state: GameState, playerId: number): void {
 
 function checkWinCondition(state: GameState): number | null {
   for (const player of state.players) {
-    if (player.score >= 50) return player.id;
+    if (player.score >= 75) return player.id;
   }
 
   const activePlayers = state.players.filter((p) => !p.isEliminated);
