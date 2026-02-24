@@ -29,7 +29,7 @@ export function buildDecks(
   const maxStability = Math.max(...stabilities);
   const stabilityRange = maxStability - minStability || 1;
 
-  const MAX_COMBINED = 12;
+  const MAX_COMBINED = 14;
 
   const result: Record<string, Card[]> = {};
 

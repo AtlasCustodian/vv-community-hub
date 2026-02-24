@@ -10,10 +10,20 @@ import { factionIds, factions } from "@/data/factionData";
 export default function Sidebar() {
   const [factionDropdownOpen, setFactionDropdownOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { factionId, faction, setFactionId, resetToInitial } = useFaction();
   const { tick, advanceTick, resetTick } = useTick();
+
+  useEffect(() => {
+    for (const item of faction.navItems) {
+      if (item.children && item.children.some((child) => pathname === child.href)) {
+        setOpenDropdown(item.label);
+        break;
+      }
+    }
+  }, [pathname, faction.navItems]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -126,6 +136,53 @@ export default function Sidebar() {
       {/* Navigation Links - vertical */}
       <nav className="flex flex-1 flex-col gap-1 px-2">
         {faction.navItems.map((item) => {
+          if (item.children) {
+            const isOpen = openDropdown === item.label;
+            const isChildActive = item.children.some((child) => pathname === child.href);
+            return (
+              <div key={item.label}>
+                <button
+                  onClick={() => setOpenDropdown(isOpen ? null : item.label)}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    isChildActive
+                      ? "bg-accent-primary/10 text-accent-primary"
+                      : "text-muted hover:text-foreground hover:bg-surface-hover"
+                  }`}
+                >
+                  <span>{item.label}</span>
+                  <svg
+                    className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isOpen && (
+                  <div className="mt-0.5 flex flex-col gap-0.5 pl-3">
+                    {item.children.map((child) => {
+                      const isActive = pathname === child.href;
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={`rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
+                            isActive
+                              ? "bg-accent-primary/10 text-accent-primary"
+                              : "text-muted hover:text-foreground hover:bg-surface-hover"
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           const isActive = pathname === item.href;
           return (
             <Link

@@ -104,6 +104,27 @@ export interface GameState {
   log: string[];
 }
 
+export interface DeckCard {
+  id: string;
+  championId: string;
+  name: string;
+  factionId: FactionId;
+  attack: number;
+  defense: number;
+  maxAttack: number;
+  maxDefense: number;
+  championClass: ChampionClass;
+  returnRate: number;
+  stabilityScore: number;
+}
+
+export interface Deck {
+  id: string;
+  name: string;
+  factionId: FactionId;
+  cards: DeckCard[];
+}
+
 export interface FactionTheme {
   primary: string;
   secondary: string;

@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useFaction } from "@/context/FactionContext";
-import type { GameState, FactionId, RawChampion, HexCoord } from "@/types/game";
+import type { GameState, FactionId, RawChampion, HexCoord, Card, Deck } from "@/types/game";
 import { buildDecks } from "@/lib/game/cardBuilder";
+import { loadDecks } from "@/lib/game/deckStorage";
 import {
   createInitialGameState,
   completeDraft,
@@ -45,6 +46,10 @@ export default function ChampionArenaPage() {
   const [savedSession, setSavedSession] = useState<ReturnType<typeof loadArenaSession>>(null);
   const restoringRef = useRef(false);
 
+  const [selectedDeckType, setSelectedDeckType] = useState<"template" | "custom">("template");
+  const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
+  const [customDecks, setCustomDecks] = useState<Deck[]>([]);
+
   const playerFactionTheme = FACTION_THEMES[factionId];
   const allRevealed = revealIndex >= 1;
   const allFactions = opponents.length > 0 ? [factionId, ...opponents] : [];
@@ -70,6 +75,8 @@ export default function ChampionArenaPage() {
     setOpponents([]);
     setRevealIndex(-1);
     setRolling(false);
+    setSelectedDeckType("template");
+    setSelectedDeckId(null);
   }
 
   function handleResume() {
@@ -84,7 +91,7 @@ export default function ChampionArenaPage() {
     restoringRef.current = false;
   }
 
-  const initGame = useCallback(async (factions: FactionId[]) => {
+  const initGame = useCallback(async (factions: FactionId[], playerCustomDeck?: Card[]) => {
     setLoading(true);
     setError(null);
 
@@ -104,6 +111,11 @@ export default function ChampionArenaPage() {
       }
 
       const decks = buildDecks(rawByFaction);
+
+      if (playerCustomDeck) {
+        decks[factions[0]] = playerCustomDeck;
+      }
+
       const state = createInitialGameState(decks, factions);
       setGameState(state);
       setLoading(false);
@@ -116,7 +128,28 @@ export default function ChampionArenaPage() {
   function handleBeginBattle() {
     if (allFactions.length !== 3) return;
     setArenaPhase("playing");
-    initGame(allFactions as FactionId[]);
+
+    let playerDeck: Card[] | undefined;
+    if (selectedDeckType === "custom" && selectedDeckId) {
+      const deck = customDecks.find((d) => d.id === selectedDeckId);
+      if (deck && deck.cards.length > 0) {
+        playerDeck = deck.cards.map((dc) => ({
+          id: `card-${dc.championId}`,
+          championId: dc.championId,
+          name: dc.name,
+          factionId: dc.factionId,
+          attack: dc.attack,
+          defense: dc.defense,
+          health: 20,
+          maxHealth: 20,
+          championClass: dc.championClass,
+          returnRate: dc.returnRate,
+          stabilityScore: dc.stabilityScore,
+        }));
+      }
+    }
+
+    initGame(allFactions as FactionId[], playerDeck);
   }
 
   function handleStateChange(newState: GameState) {
@@ -183,7 +216,15 @@ export default function ChampionArenaPage() {
       setOpponents([]);
       setRevealIndex(-1);
       setRolling(false);
+      setSelectedDeckType("template");
+      setSelectedDeckId(null);
     }
+  }, [factionId]);
+
+  // Load custom decks from localStorage
+  useEffect(() => {
+    const allDecks = loadDecks();
+    setCustomDecks(allDecks[factionId] ?? []);
   }, [factionId]);
 
   // Load saved session on mount
@@ -303,6 +344,89 @@ export default function ChampionArenaPage() {
               );
             })}
           </div>
+
+          {/* Deck selection */}
+          {allRevealed && (
+            <div className="w-full max-w-md animate-fade-in">
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest text-center mb-3">
+                Select Your Deck
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => { setSelectedDeckType("template"); setSelectedDeckId(null); }}
+                  className="flex items-center gap-3 rounded-xl border px-4 py-3 transition-all text-left"
+                  style={{
+                    borderColor: selectedDeckType === "template" ? playerFactionTheme.primary : "var(--border-dim)",
+                    background: selectedDeckType === "template"
+                      ? `linear-gradient(135deg, ${playerFactionTheme.gradientFrom}12, ${playerFactionTheme.gradientTo}12)`
+                      : "transparent",
+                    boxShadow: selectedDeckType === "template" ? `0 0 12px ${playerFactionTheme.primary}20` : "none",
+                  }}
+                >
+                  <span className="text-lg">🃏</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold" style={{ color: selectedDeckType === "template" ? playerFactionTheme.primary : "var(--text-foreground)" }}>
+                      Template Deck
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Auto-generated from all faction champions
+                    </p>
+                  </div>
+                  {selectedDeckType === "template" && (
+                    <span className="text-xs font-mono uppercase tracking-wider" style={{ color: playerFactionTheme.primary }}>
+                      Selected
+                    </span>
+                  )}
+                </button>
+
+                {customDecks.map((deck) => {
+                  const isSelected = selectedDeckType === "custom" && selectedDeckId === deck.id;
+                  const isEmpty = deck.cards.length === 0;
+                  return (
+                    <button
+                      key={deck.id}
+                      onClick={() => {
+                        if (isEmpty) return;
+                        setSelectedDeckType("custom");
+                        setSelectedDeckId(deck.id);
+                      }}
+                      disabled={isEmpty}
+                      className="flex items-center gap-3 rounded-xl border px-4 py-3 transition-all text-left disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={{
+                        borderColor: isSelected ? playerFactionTheme.primary : "var(--border-dim)",
+                        background: isSelected
+                          ? `linear-gradient(135deg, ${playerFactionTheme.gradientFrom}12, ${playerFactionTheme.gradientTo}12)`
+                          : "transparent",
+                        boxShadow: isSelected ? `0 0 12px ${playerFactionTheme.primary}20` : "none",
+                      }}
+                    >
+                      <span className="text-lg">⚒️</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold" style={{ color: isSelected ? playerFactionTheme.primary : "var(--text-foreground)" }}>
+                          {deck.name}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          {deck.cards.length} card{deck.cards.length !== 1 ? "s" : ""}
+                          {isEmpty ? " — empty" : ""}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <span className="text-xs font-mono uppercase tracking-wider" style={{ color: playerFactionTheme.primary }}>
+                          Selected
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {customDecks.length === 0 && (
+                  <p className="text-xs text-[var(--text-muted)] text-center py-2 italic">
+                    No custom decks yet — build one in the Deck Builder
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Buttons */}
           <div className="flex gap-4 mt-4 flex-wrap justify-center">
