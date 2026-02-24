@@ -93,6 +93,28 @@ export function getSpawnZones(): HexCoord[][] {
   ];
 }
 
+/**
+ * Two spawn zones on opposite sides of the hex grid for 2-player mode.
+ * Player 0 (top): upper edge hexes
+ * Player 1 (bottom): lower edge hexes
+ */
+export function getSpawnZones2P(): HexCoord[][] {
+  return [
+    // Player 0 - top
+    [
+      { q: -1, r: -2 },
+      { q: 0, r: -3 },
+      { q: 1, r: -3 },
+    ],
+    // Player 1 - bottom
+    [
+      { q: -1, r: 3 },
+      { q: 0, r: 3 },
+      { q: 1, r: 2 },
+    ],
+  ];
+}
+
 export function isValidHex(coord: HexCoord, board: HexTile[]): boolean {
   return board.some((t) => hexEquals(t.coord, coord));
 }

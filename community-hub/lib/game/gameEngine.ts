@@ -12,6 +12,7 @@ import { shuffleDeck } from "./cardBuilder";
 import {
   generateBoard,
   getSpawnZones,
+  getSpawnZones2P,
   hexNeighbors,
   hexEquals,
   hexDistance,
@@ -24,7 +25,8 @@ export function createInitialGameState(
   factionIds: FactionId[]
 ): GameState {
   const board = generateBoard();
-  const spawnZones = getSpawnZones();
+  const playerCount = factionIds.length;
+  const spawnZones = playerCount === 2 ? getSpawnZones2P() : getSpawnZones();
 
   const players: Player[] = factionIds.map((fid, i) => ({
     id: i,
@@ -39,8 +41,10 @@ export function createInitialGameState(
   }));
 
   const playerTurnCounts: Record<number, number> = {};
+  const turnOrder: number[] = [];
   for (let i = 0; i < players.length; i++) {
     playerTurnCounts[i] = 0;
+    turnOrder.push(i);
   }
 
   return {
@@ -49,7 +53,7 @@ export function createInitialGameState(
     board,
     currentPlayerIndex: 0,
     turnNumber: 0,
-    turnOrder: [0, 1, 2],
+    turnOrder,
     turnOrderIndex: 0,
     winner: null,
     draftSelections: new Map(),

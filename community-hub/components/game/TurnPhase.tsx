@@ -31,12 +31,21 @@ import ChampionTooltip from "./ChampionTooltip";
 
 type ActionMode = "none" | "move" | "attack" | "deploy";
 
+export type TurnAction =
+  | { type: "move"; from: HexCoord; to: HexCoord }
+  | { type: "attack"; from: HexCoord; to: HexCoord }
+  | { type: "deploy"; cardId: string; position: HexCoord }
+  | { type: "ability"; coord: HexCoord; targetCoord?: HexCoord }
+  | { type: "endTurn" };
+
 interface TurnPhaseProps {
   state: GameState;
   onStateChange: (newState: GameState) => void;
+  onAction?: (action: TurnAction) => void;
+  disabled?: boolean;
 }
 
-export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
+export default function TurnPhase({ state, onStateChange, onAction, disabled }: TurnPhaseProps) {
   const [selectedHex, setSelectedHex] = useState<HexCoord | null>(null);
   const [selectedHandCard, setSelectedHandCard] = useState<string | null>(null);
   const [actionMode, setActionMode] = useState<ActionMode>("none");
@@ -156,9 +165,11 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
   }
 
   function handleHexClick(coord: HexCoord) {
+    if (disabled) return;
     if (actionMode === "move" && selectedHex) {
       const moves = getValidMoves(state, selectedHex);
       if (moves.some((m) => hexEquals(m, coord))) {
+        onAction?.({ type: "move", from: selectedHex, to: coord });
         const newState = moveChampion(state, selectedHex, coord);
         onStateChange(newState);
         setSelectedHex(null);
@@ -178,6 +189,7 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
     if (actionMode === "deploy" && selectedHandCard) {
       const validSpawns = getValidDeploymentTiles(state, state.currentPlayerIndex);
       if (validSpawns.some((s) => hexEquals(s, coord))) {
+        onAction?.({ type: "deploy", cardId: selectedHandCard, position: coord });
         const newState = playChampionFromHand(state, selectedHandCard, coord);
         onStateChange(newState);
         setSelectedHandCard(null);
@@ -192,14 +204,15 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
   }
 
   function handleChampionClick(coord: HexCoord) {
+    if (disabled) return;
     const tile = state.board.find((t) => hexEquals(t.coord, coord));
     if (!tile?.occupant) return;
 
     if (tile.occupant.playerId === state.currentPlayerIndex) {
-      // If in move mode and clicking a different friendly champion, try swap
       if (actionMode === "move" && selectedHex && !hexEquals(selectedHex, coord)) {
         const swaps = getSwapTargets(state, selectedHex);
         if (swaps.some((s) => hexEquals(s, coord))) {
+          onAction?.({ type: "move", from: selectedHex, to: coord });
           const newState = moveChampion(state, selectedHex, coord);
           onStateChange(newState);
           setSelectedHex(null);
@@ -214,6 +227,7 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
   }
 
   function handleDoubleClick(coord: HexCoord) {
+    if (disabled) return;
     const tile = state.board.find((t) => hexEquals(t.coord, coord));
     if (!tile?.occupant || tile.occupant.playerId !== state.currentPlayerIndex) return;
 
@@ -225,12 +239,14 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
     setActionMode("none");
 
     if (champ.card.championClass === "defender") {
+      onAction?.({ type: "ability", coord });
       const newState = resolveDefenderAbility(state, coord);
       onStateChange(newState);
       setSelectedHex(null);
       return;
     }
     if (champ.card.championClass === "attacker") {
+      onAction?.({ type: "ability", coord });
       const newState = resolveAttackerAbility(state, coord);
       onStateChange(newState);
       setSelectedHex(null);
@@ -244,7 +260,12 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
   }
 
   function handleConfirmAttack() {
-    if (!pendingAttack) return;
+    if (!pendingAttack || disabled) return;
+    if (abilityActive && selectedChampion?.card.championClass === "bruiser") {
+      onAction?.({ type: "ability", coord: pendingAttack.attacker, targetCoord: pendingAttack.defender });
+    } else {
+      onAction?.({ type: "attack", from: pendingAttack.attacker, to: pendingAttack.defender });
+    }
     const newState = abilityActive && selectedChampion?.card.championClass === "bruiser"
       ? resolveBruiserAbility(state, pendingAttack.attacker, pendingAttack.defender)
       : resolveAttack(state, pendingAttack.attacker, pendingAttack.defender);
@@ -261,10 +282,11 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
   }
 
   function handleUseAbility() {
-    if (!selectedChampion || !selectedHex) return;
+    if (!selectedChampion || !selectedHex || disabled) return;
     const champClass = selectedChampion.card.championClass;
 
     if (champClass === "defender") {
+      onAction?.({ type: "ability", coord: selectedHex });
       const newState = resolveDefenderAbility(state, selectedHex);
       onStateChange(newState);
       setSelectedHex(null);
@@ -273,6 +295,7 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
       return;
     }
     if (champClass === "attacker") {
+      onAction?.({ type: "ability", coord: selectedHex });
       const newState = resolveAttackerAbility(state, selectedHex);
       onStateChange(newState);
       setSelectedHex(null);
@@ -287,8 +310,10 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
   }
 
   function doEndTurn() {
+    if (disabled) return;
     setShowEndTurnWarning(false);
     setDeckExpanded(false);
+    onAction?.({ type: "endTurn" });
     const newState = endTurn(state);
     onStateChange(newState);
     setSelectedHex(null);
@@ -383,6 +408,7 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
   }
 
   function handleDrop(from: HexCoord, to: HexCoord) {
+    if (disabled) return;
     const fromTile = state.board.find((t) => hexEquals(t.coord, from));
     const toTile = state.board.find((t) => hexEquals(t.coord, to));
     if (!fromTile?.occupant) return;
@@ -399,6 +425,7 @@ export default function TurnPhase({ state, onStateChange }: TurnPhaseProps) {
     if (!state.movedChampions.has(fromTile.occupant.card.id)) {
       const moves = getValidMoves(state, from);
       if (moves.some((m) => hexEquals(m, to))) {
+        onAction?.({ type: "move", from, to });
         const newState = moveChampion(state, from, to);
         onStateChange(newState);
       }

@@ -11,7 +11,11 @@
     "start:battler": "npm run start --prefix card-battler",
     "install:hub": "npm install --prefix community-hub",
     "install:battler": "npm install --prefix card-battler",
-    "postinstall": "npm install --prefix community-hub && npm install --prefix card-battler"
+    "dev:explorer": "npm run dev --prefix rogue-explorer",
+    "build:explorer": "npm run build --prefix rogue-explorer",
+    "start:explorer": "npm run start --prefix rogue-explorer",
+    "install:explorer": "npm install --prefix rogue-explorer",
+    "postinstall": "npm install --prefix community-hub && npm install --prefix card-battler && npm install --prefix rogue-explorer"
   },
   "dependencies": {
     "pg": "^8.18.0"

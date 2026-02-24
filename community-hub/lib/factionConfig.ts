@@ -93,7 +93,8 @@ const fireConfig: FactionConfig = {
       label: "Champion Arena",
       href: "/champion-arena",
       children: [
-        { label: "Arena", href: "/champion-arena" },
+        { label: "Arena (Local)", href: "/champion-arena" },
+        { label: "Arena (Online)", href: "/champion-arena/online" },
         { label: "Deck Builder", href: "/champion-arena/deck-builder" },
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],
@@ -207,7 +208,8 @@ const earthConfig: FactionConfig = {
       label: "Champion Arena",
       href: "/champion-arena",
       children: [
-        { label: "Arena", href: "/champion-arena" },
+        { label: "Arena (Local)", href: "/champion-arena" },
+        { label: "Arena (Online)", href: "/champion-arena/online" },
         { label: "Deck Builder", href: "/champion-arena/deck-builder" },
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],
@@ -278,7 +280,8 @@ const waterConfig: FactionConfig = {
       label: "Champion Arena",
       href: "/champion-arena",
       children: [
-        { label: "Arena", href: "/champion-arena" },
+        { label: "Arena (Local)", href: "/champion-arena" },
+        { label: "Arena (Online)", href: "/champion-arena/online" },
         { label: "Deck Builder", href: "/champion-arena/deck-builder" },
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],
@@ -349,7 +352,8 @@ const woodConfig: FactionConfig = {
       label: "Champion Arena",
       href: "/champion-arena",
       children: [
-        { label: "Arena", href: "/champion-arena" },
+        { label: "Arena (Local)", href: "/champion-arena" },
+        { label: "Arena (Online)", href: "/champion-arena/online" },
         { label: "Deck Builder", href: "/champion-arena/deck-builder" },
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],
@@ -420,7 +424,8 @@ const metalConfig: FactionConfig = {
       label: "Champion Arena",
       href: "/champion-arena",
       children: [
-        { label: "Arena", href: "/champion-arena" },
+        { label: "Arena (Local)", href: "/champion-arena" },
+        { label: "Arena (Online)", href: "/champion-arena/online" },
         { label: "Deck Builder", href: "/champion-arena/deck-builder" },
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],

@@ -12,6 +12,8 @@ import type {
 } from "@/types/game";
 import { FACTION_THEMES } from "@/lib/game/factionThemes";
 import { loadDecks, saveDecks } from "@/lib/game/deckStorage";
+import { syncDeckToServer, deleteDeckFromServer, loadDecksFromServer } from "@/lib/game/deckSync";
+import { getPlayerId, ensurePlayerRegistered, getPlayerName } from "@/lib/game/playerIdentity";
 import Card from "@/components/game/Card";
 import ClassIcon from "@/components/game/ClassIcon";
 
@@ -80,10 +82,32 @@ export default function DeckBuilderPage() {
   const [mounted, setMounted] = useState(false);
   const editingRef = useRef(false);
 
-  // Load decks from localStorage
+  // Load decks from localStorage, then merge server decks
   useEffect(() => {
-    setAllDecks(loadDecks());
+    const local = loadDecks();
+    setAllDecks(local);
     setMounted(true);
+
+    // Register player and merge server decks
+    const playerName = getPlayerName();
+    if (playerName) {
+      ensurePlayerRegistered(playerName).catch(() => {});
+    }
+    loadDecksFromServer().then((serverDecks) => {
+      if (serverDecks.length === 0) return;
+      setAllDecks((prev) => {
+        const merged = { ...prev };
+        for (const sd of serverDecks) {
+          const fid = sd.factionId;
+          if (!merged[fid]) continue;
+          if (!merged[fid].find((d) => d.id === sd.id)) {
+            merged[fid] = [...merged[fid], sd];
+          }
+        }
+        saveDecks(merged);
+        return merged;
+      });
+    }).catch(() => {});
   }, []);
 
   // When faction changes, reset active deck to first available or null
@@ -158,11 +182,14 @@ export default function DeckBuilderPage() {
     }
   }, [selectedChampionId, selectedChampion, faction.champions]);
 
-  // Persist decks on any change
+  // Persist decks on any change (local + server)
   const persistDecks = useCallback(
-    (next: Record<FactionId, Deck[]>) => {
+    (next: Record<FactionId, Deck[]>, changedDeck?: Deck) => {
       setAllDecks(next);
       saveDecks(next);
+      if (changedDeck) {
+        syncDeckToServer(changedDeck).catch(() => {});
+      }
     },
     [],
   );
@@ -195,7 +222,7 @@ export default function DeckBuilderPage() {
       ...allDecks,
       [factionId]: [...factionDecks, deck],
     };
-    persistDecks(next);
+    persistDecks(next, deck);
     setActiveDeckId(deck.id);
     setNewDeckName("");
     setIsCreatingDeck(false);
@@ -229,7 +256,7 @@ export default function DeckBuilderPage() {
         d.id === activeDeck.id ? updatedDeck : d,
       ),
     };
-    persistDecks(next);
+    persistDecks(next, updatedDeck);
     setSelectedChampionId(null);
     setChosenClass(null);
   }
@@ -246,7 +273,7 @@ export default function DeckBuilderPage() {
         d.id === activeDeck.id ? updatedDeck : d,
       ),
     };
-    persistDecks(next);
+    persistDecks(next, updatedDeck);
   }
 
   function handleDeleteDeck(deckId: string) {
@@ -255,6 +282,7 @@ export default function DeckBuilderPage() {
       [factionId]: factionDecks.filter((d) => d.id !== deckId),
     };
     persistDecks(next);
+    deleteDeckFromServer(deckId).catch(() => {});
     if (activeDeckId === deckId) {
       const remaining = next[factionId];
       setActiveDeckId(remaining.length > 0 ? remaining[0].id : null);
@@ -274,7 +302,7 @@ export default function DeckBuilderPage() {
         d.id === activeDeck.id ? updatedDeck : d,
       ),
     };
-    persistDecks(next);
+    persistDecks(next, updatedDeck);
     setSelectedChampionId(dc.championId);
     setChosenAttack(dc.attack);
     setChosenDefense(dc.defense);

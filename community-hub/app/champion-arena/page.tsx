@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useFaction } from "@/context/FactionContext";
 import type { GameState, FactionId, RawChampion, HexCoord, Card, Deck } from "@/types/game";
 import { buildDecks } from "@/lib/game/cardBuilder";
@@ -461,6 +462,21 @@ export default function ChampionArenaPage() {
                 Re-roll
               </button>
             )}
+          </div>
+
+          {/* Online Play link */}
+          <div className="flex flex-col items-center gap-2 animate-fade-in">
+            <div className="h-px w-32 bg-[var(--border-dim)]" />
+            <Link
+              href="/champion-arena/online"
+              className="btn-holo text-sm px-6 py-2.5"
+              style={{ borderColor: `${playerFactionTheme.primary}40` }}
+            >
+              Online Play
+            </Link>
+            <p className="text-xs text-[var(--text-muted)]">
+              Play against opponents on other machines
+            </p>
           </div>
 
           {/* Resume saved game */}
