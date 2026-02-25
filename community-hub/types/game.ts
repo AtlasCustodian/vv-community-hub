@@ -10,6 +10,8 @@ export type GamePhase =
   | "interstitial"
   | "victory";
 
+export type AIDifficulty = "easy" | "medium" | "hard";
+
 
 export interface RawChampion {
   id: string;

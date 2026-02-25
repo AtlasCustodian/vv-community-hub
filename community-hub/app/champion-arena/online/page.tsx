@@ -12,7 +12,7 @@ import {
   setPlayerName,
   ensurePlayerRegistered,
 } from "@/lib/game/playerIdentity";
-import { loadDecksFromServer } from "@/lib/game/deckSync";
+import { loadDecksFromServer, syncDeckToServer } from "@/lib/game/deckSync";
 import type { RoomPlayer } from "@/lib/game/useOnlineGame";
 
 type LobbyStep = "setup" | "waiting";
@@ -107,6 +107,11 @@ export default function OnlineLobbyPage() {
 
       const deckId = selectedDeckType === "custom" && selectedDeckId ? selectedDeckId : undefined;
 
+      if (deckId) {
+        const deck = customDecks.find((d) => d.id === deckId);
+        if (deck) await syncDeckToServer(deck);
+      }
+
       const res = await fetch("/api/arena/rooms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,6 +150,11 @@ export default function OnlineLobbyPage() {
       await handleRegister();
 
       const deckId = selectedDeckType === "custom" && selectedDeckId ? selectedDeckId : undefined;
+
+      if (deckId) {
+        const deck = customDecks.find((d) => d.id === deckId);
+        if (deck) await syncDeckToServer(deck);
+      }
 
       const res = await fetch(`/api/arena/rooms/${roomCode.trim().toUpperCase()}/join`, {
         method: "POST",

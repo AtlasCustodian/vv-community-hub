@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useFaction } from "@/context/FactionContext";
-import type { GameState, FactionId, RawChampion, HexCoord, Card, Deck } from "@/types/game";
+import type { GameState, FactionId, RawChampion, HexCoord, Card, Deck, AIDifficulty } from "@/types/game";
 import { buildDecks } from "@/lib/game/cardBuilder";
 import { loadDecks } from "@/lib/game/deckStorage";
 import {
@@ -14,6 +14,12 @@ import {
   autoDrawCard,
   willDeployBeAvailable,
 } from "@/lib/game/gameEngine";
+import {
+  aiDraft,
+  aiPlace,
+  aiPlanTurn,
+  aiHandleInterstitial,
+} from "@/lib/game/aiPlayer";
 import { FACTION_THEMES, pickRandomFactionsExcluding } from "@/lib/game/factionThemes";
 import {
   saveArenaSession,
@@ -51,6 +57,9 @@ export default function ChampionArenaPage() {
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
   const [customDecks, setCustomDecks] = useState<Deck[]>([]);
 
+  const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>("medium");
+  const aiActionsQueueRef = useRef<{ type: string; apply: (s: GameState) => GameState }[]>([]);
+
   const playerFactionTheme = FACTION_THEMES[factionId];
   const allRevealed = revealIndex >= 1;
   const allFactions = opponents.length > 0 ? [factionId, ...opponents] : [];
@@ -66,6 +75,7 @@ export default function ChampionArenaPage() {
   }
 
   function handleRestart() {
+    aiActionsQueueRef.current = [];
     clearArenaSession();
     setSavedSession(null);
     setArenaPhase("lobby");
@@ -244,6 +254,74 @@ export default function ChampionArenaPage() {
       saveArenaSession(arenaPhase, opponents, gameState, pendingPhase);
     }
   }, [mounted, arenaPhase, opponents, gameState, pendingPhase]);
+
+  // AI turn handling — player 0 is human, all others are AI.
+  // Uses a queue ref so each action triggers a state update, which re-renders,
+  // which fires this effect again to process the next queued action.
+  useEffect(() => {
+    if (!gameState || arenaPhase !== "playing") return;
+    if (gameState.phase === "victory") return;
+
+    const isAiPlayer = gameState.currentPlayerIndex > 0;
+    if (!isAiPlayer) {
+      aiActionsQueueRef.current = [];
+      return;
+    }
+
+    if (gameState.phase === "interstitial") {
+      const timer = setTimeout(() => {
+        const nextState = aiHandleInterstitial(gameState);
+        setGameState(nextState);
+        setPendingPhase(null);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+
+    if (gameState.phase === "draft") {
+      const timer = setTimeout(() => {
+        const selectedIds = aiDraft(gameState, aiDifficulty);
+        const nextState = completeDraft(gameState, gameState.currentPlayerIndex, selectedIds);
+        handleStateChange(nextState);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+
+    if (gameState.phase === "placement") {
+      const timer = setTimeout(() => {
+        const { cardId, position } = aiPlace(gameState, aiDifficulty);
+        const nextState = placeChampion(gameState, gameState.currentPlayerIndex, cardId, position);
+        handleStateChange(nextState);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+
+    if (gameState.phase === "turn") {
+      if (aiActionsQueueRef.current.length === 0) {
+        aiActionsQueueRef.current = aiPlanTurn(gameState, aiDifficulty);
+      }
+
+      const nextAction = aiActionsQueueRef.current[0];
+      if (!nextAction) return;
+
+      const delay = nextAction.type === "endTurn" ? 300 : 600;
+      const timer = setTimeout(() => {
+        const newState = nextAction.apply(gameState);
+        aiActionsQueueRef.current = aiActionsQueueRef.current.slice(1);
+
+        if (newState.phase === "victory") {
+          clearArenaSession();
+          setSavedSession(null);
+          aiActionsQueueRef.current = [];
+        }
+        if (newState.phase === "interstitial") {
+          setPendingPhase(newState.phase);
+        }
+        setGameState(newState);
+      }, delay);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gameState, arenaPhase, aiDifficulty]);
 
   const projectedPoints: Record<number, number> = {};
   if (gameState?.phase === "turn") {
@@ -425,6 +503,50 @@ export default function ChampionArenaPage() {
                     No custom decks yet — build one in the Deck Builder
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* AI Difficulty */}
+          {allRevealed && (
+            <div className="w-full max-w-md animate-fade-in">
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest text-center mb-3">
+                AI Difficulty
+              </p>
+              <div className="flex gap-2 justify-center">
+                {(["easy", "medium", "hard"] as const).map((level) => {
+                  const isSelected = aiDifficulty === level;
+                  const labels = { easy: "Easy", medium: "Medium", hard: "Hard" };
+                  const descriptions = {
+                    easy: "Random moves",
+                    medium: "Smart tactics",
+                    hard: "Ruthless strategy",
+                  };
+                  return (
+                    <button
+                      key={level}
+                      onClick={() => setAiDifficulty(level)}
+                      className="flex-1 rounded-xl border px-3 py-3 transition-all text-center"
+                      style={{
+                        borderColor: isSelected ? playerFactionTheme.primary : "var(--border-dim)",
+                        background: isSelected
+                          ? `linear-gradient(135deg, ${playerFactionTheme.gradientFrom}12, ${playerFactionTheme.gradientTo}12)`
+                          : "transparent",
+                        boxShadow: isSelected ? `0 0 12px ${playerFactionTheme.primary}20` : "none",
+                      }}
+                    >
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: isSelected ? playerFactionTheme.primary : "var(--text-foreground)" }}
+                      >
+                        {labels[level]}
+                      </p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                        {descriptions[level]}
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -616,7 +738,7 @@ export default function ChampionArenaPage() {
       </div>
 
       {/* Overlays */}
-      {gameState.phase === "interstitial" && (
+      {gameState.phase === "interstitial" && gameState.currentPlayerIndex === 0 && (
         <Interstitial
           player={gameState.players[gameState.currentPlayerIndex]}
           nextPhase={

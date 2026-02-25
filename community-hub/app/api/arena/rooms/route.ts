@@ -29,17 +29,26 @@ export async function POST(req: Request) {
       attempts++;
     }
 
-    await pool.query(
-      `INSERT INTO arena_rooms (id, mode, status, host_player_id, host_faction_id, host_deck_id)
-       VALUES ($1, $2, 'waiting', $3, $4, $5)`,
-      [roomId, mode, playerId, factionId, deckId ?? null],
-    );
-
-    await pool.query(
-      `INSERT INTO arena_room_players (room_id, player_id, seat, faction_id, deck_id, is_ready)
-       VALUES ($1, $2, 0, $3, $4, FALSE)`,
-      [roomId, playerId, factionId, deckId ?? null],
-    );
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `INSERT INTO arena_rooms (id, mode, status, host_player_id, host_faction_id, host_deck_id)
+         VALUES ($1, $2, 'waiting', $3, $4, $5)`,
+        [roomId, mode, playerId, factionId, deckId ?? null],
+      );
+      await client.query(
+        `INSERT INTO arena_room_players (room_id, player_id, seat, faction_id, deck_id, is_ready)
+         VALUES ($1, $2, 0, $3, $4, FALSE)`,
+        [roomId, playerId, factionId, deckId ?? null],
+      );
+      await client.query("COMMIT");
+    } catch (txErr) {
+      await client.query("ROLLBACK");
+      throw txErr;
+    } finally {
+      client.release();
+    }
 
     return NextResponse.json({ roomId });
   } catch (err) {

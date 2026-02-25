@@ -25,9 +25,12 @@ export function setPlayerName(name: string): void {
 export async function ensurePlayerRegistered(displayName: string): Promise<void> {
   const id = getPlayerId();
   setPlayerName(displayName);
-  await fetch("/api/arena/players", {
+  const res = await fetch("/api/arena/players", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, displayName }),
   });
+  if (!res.ok) {
+    throw new Error("Failed to register player");
+  }
 }

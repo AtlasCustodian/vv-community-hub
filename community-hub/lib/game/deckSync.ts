@@ -26,20 +26,19 @@ export async function syncDecksToServer(decks: Record<FactionId, Deck[]>): Promi
 
 export async function syncDeckToServer(deck: Deck): Promise<void> {
   const playerId = getPlayerId();
-  try {
-    await fetch("/api/arena/decks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: deck.id,
-        player_id: playerId,
-        name: deck.name,
-        faction_id: deck.factionId,
-        cards: deck.cards,
-      }),
-    });
-  } catch {
-    // silently ignore
+  const res = await fetch("/api/arena/decks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: deck.id,
+      player_id: playerId,
+      name: deck.name,
+      faction_id: deck.factionId,
+      cards: deck.cards,
+    }),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to sync deck to server");
   }
 }
 
