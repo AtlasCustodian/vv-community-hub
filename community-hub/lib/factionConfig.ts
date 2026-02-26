@@ -99,6 +99,7 @@ const fireConfig: FactionConfig = {
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],
     },
+    { label: "Vantheon Explorer", href: "/vantheon-explorer" },
   ],
   userProfileDefaults: {
     role: "Thermtech — Generator 4",
@@ -214,6 +215,7 @@ const earthConfig: FactionConfig = {
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],
     },
+    { label: "Vantheon Explorer", href: "/vantheon-explorer" },
   ],
   userProfileDefaults: { role: "Master Artisan — The Roots Market", joinDate: "Year 8 of the Current Cycle", bio: "Master craftsman and guild coordinator in the Roots. Keeps the market thriving, the trades moving, and the culture alive. The island is more than survival — it's a society.", avatarEmoji: "🏛️" },
   stats: [
@@ -286,6 +288,7 @@ const waterConfig: FactionConfig = {
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],
     },
+    { label: "Vantheon Explorer", href: "/vantheon-explorer" },
   ],
   userProfileDefaults: { role: "Breaker — Winter Wall Detail", joinDate: "Year 9 of the Current Cycle", bio: "Low-ranked but always present. First witness to The First's message. Faces the Veil every shift so the rest of the island sleeps easy.", avatarEmoji: "🌊" },
   stats: [
@@ -358,6 +361,7 @@ const woodConfig: FactionConfig = {
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],
     },
+    { label: "Vantheon Explorer", href: "/vantheon-explorer" },
   ],
   userProfileDefaults: { role: "Steward — Terrace Farmer, Eastern Slopes", joinDate: "Year 6 of the Current Cycle", bio: "Experienced terrace farmer on the eastern slopes. Manages flood channels under pressure. Decisive, natural leader. The quota holds because we make it hold.", avatarEmoji: "🌿" },
   stats: [
@@ -430,6 +434,7 @@ const metalConfig: FactionConfig = {
         { label: "Arena Record", href: "/champion-arena/arena-record" },
       ],
     },
+    { label: "Vantheon Explorer", href: "/vantheon-explorer" },
   ],
   userProfileDefaults: { role: "Artificer — Obelisk Researcher, The Gardens", joinDate: "Year 14 of the Current Cycle", bio: "Graduate student researching the Obelisk — the fringe topic everyone else abandoned. Bookish, curious, not excited about fieldwork. The vindicated researcher when The First's message arrived.", avatarEmoji: "⚗️" },
   stats: [
